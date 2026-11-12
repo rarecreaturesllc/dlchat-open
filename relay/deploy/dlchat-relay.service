@@ -1,0 +1,17 @@
+[Unit]
+Description=DLChat private mailbox relay (onion only)
+After=network.target
+
+[Service]
+User=dlchat-relay
+ExecStart=/usr/local/bin/dlchat-relay -listen 127.0.0.1:8080 -data /var/lib/dlchat-relay/queues.gob
+Restart=always
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/dlchat-relay
+PrivateTmp=true
+StandardOutput=null
+
+[Install]
+WantedBy=multi-user.target

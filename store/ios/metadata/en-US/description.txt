@@ -1,0 +1,20 @@
+DLChat lets a group of neighbors send private messages over ordinary walkie-talkies when cell service and the internet are down.
+
+Your group shares a secret phrase of 10, 15 or 20 words that the app makes for you. Type a message and DLChat seals it with that phrase, then turns it into a list of short words. Read the words out over the radio. Anyone else on the channel hears gibberish. A phone that has the phrase turns the words back into your message.
+
+You can send the same sealed message other ways:
+- Play it as sound into the radio microphone while the other phone listens.
+- Show it as a QR code to someone standing next to you.
+- Chat online through public relays when the internet works. Tor is on by default, so the relays do not see your internet address.
+- Send it through a Meshtastic radio paired over Bluetooth.
+
+DLChat asks for a PIN every time you open it. You can set a second, duress PIN that erases everything and opens an app that looks normal and empty. Holding one button also wipes every group, phrase and message from the phone. If you are forced to send something, you can mark that message as sent under pressure so the people who read it are warned.
+
+What DLChat does not protect, which the app also lists in Settings:
+- Anyone who gets your phrase can read every message in the group, past and future. Keep it on paper.
+- People nearby can tell that you are sending something, when, and how long it is.
+- The app PIN only guards the screen. It adds no encryption.
+- No outside cryptographer has checked the design yet.
+- Encrypted messages may be prohibited on some radio services. Check the rules where you live. DLChat is not approved or certified by any regulator.
+
+There are no accounts and no analytics. Your groups, phrases and messages stay on your phone unless you turn on online chat, which posts sealed messages to public relays run by other people. Nothing reaches the developer unless you choose to send a bug report.

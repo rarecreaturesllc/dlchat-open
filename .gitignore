@@ -1,0 +1,20 @@
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+build/
+.DS_Store
+*.log
+ralph/logs/
+DerivedData/
+.build/
+*.xcuserstate
+xcuserdata/
+
+# Tor binary (fetched and checksum-verified by scripts/fetch-tor.sh)
+Packages/TorKit/tor.xcframework/
+
+# Screenshot tour output (regenerate: see DLChatUITests/ScreenshotTour.swift)
+docs/screenshots/
+*.p8

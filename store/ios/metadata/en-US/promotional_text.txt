@@ -1,0 +1,1 @@
+Turn a message into words you can read out over a walkie-talkie. Only phones that have your group's phrase can turn them back into the message.

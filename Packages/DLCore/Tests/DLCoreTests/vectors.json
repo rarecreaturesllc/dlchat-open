@@ -1,0 +1,255 @@
+{
+  "phrases": [
+    {
+      "words": 10,
+      "entropyHex": "0102030405060708090a0b0c",
+      "indices": [
+        4,
+        32,
+        193,
+        5,
+        24,
+        112,
+        514,
+        266,
+        44,
+        194
+      ],
+      "phrase": "abstract airport clerk absurd affix bench ladle diagram alpha clever",
+      "masterHex": "16b7488df7c1b30df5c897766293a888a91b4781a039c63a106349ca4a9c7d2d",
+      "safety": "flame ceiling orchard",
+      "rooms": [
+        {
+          "room": "",
+          "roomKeyHex": "265b29eefc97ebb7247c7dbf1be11afd9ed03ec177890d2b16bfb20cee1cf083",
+          "macKeyHex": "d88ab57e17bd5bed38d967784ff6a8993f9bf574fc2a50981ba0e63c062dc533",
+          "encKeyHex": "57272525dd6e0cae2f21836c6c0a7a43b3f29db530bf316bfdc75dc5b34f7dde"
+        },
+        {
+          "room": "bridge",
+          "roomKeyHex": "7f3f39149373ee721bdd810bc5735093f6f9e52165b60512e67d51a4e9a9e007",
+          "macKeyHex": "6c05131a6b0637dd679a8cb5aac22aa6671ad498aaf5e242191f444e177656ce",
+          "encKeyHex": "386099eaccf188b225f71bcfa2339d8a69f590b01cc9cebdb7754bd4b73cab66"
+        },
+        {
+          "room": " Cafe\u0301 ",
+          "roomKeyHex": "f0a7a4ba17bd2613f21ad973d1641978fb2cdcf25caad9c51147274071346583",
+          "macKeyHex": "dda85010b945a316a85086a09211a1c4492a8d98bc09976e037e2c25dd818ac9",
+          "encKeyHex": "85163ef97b85ed9d3972d27a7354cf74707b0dfd2199ffc89a60c3e03aded899"
+        }
+      ]
+    },
+    {
+      "words": 15,
+      "entropyHex": "28292a2b2c2d2e2f3031323334353637383900",
+      "indices": [
+        160,
+        658,
+        650,
+        812,
+        180,
+        738,
+        972,
+        49,
+        200,
+        819,
+        269,
+        310,
+        220,
+        899,
+        576
+      ],
+      "phrase": "carpet oyster orient sibling chili relic view amino coach sister diesel eject country theme mesh",
+      "masterHex": "bb77b9c5467ae26b9c1bde9ec34a3a862ae9fa6ecc415875a29a9164dc0357e5",
+      "safety": "left equip power",
+      "rooms": [
+        {
+          "room": "",
+          "roomKeyHex": "d8de21412b4eb573c6db1ed39376d320a6ddd827519a8a39bb5182f20371f7b9",
+          "macKeyHex": "87bf5bff6a8c5748a7f6b31321056b379a8a6d07eab50f559b9dd0a99530761e",
+          "encKeyHex": "83753d13b09084028193ee45df4d6fd45e2e0cf517167f7a176188ead40b1a2b"
+        },
+        {
+          "room": "bridge",
+          "roomKeyHex": "ea2187b09717442ed0ef9e420f025a83c48d55f6497818c75797b08f3e10c312",
+          "macKeyHex": "6764c26fafc67def4ce0e7f7fb6aa7b1910f55a02832abf59ff0a5db2ea18c67",
+          "encKeyHex": "5902587412310980904df597cb1b1212d6b32ed20e7c87e5e646b7b1213ebf07"
+        },
+        {
+          "room": " Cafe\u0301 ",
+          "roomKeyHex": "c274fb4f21e9122b73961bbec6ba66ca6911ac1ec4c4c51f61fca91a388fcfed",
+          "macKeyHex": "991d37391215e8ddb6bfeeaaadd232114e95761928a1fede12c8fb0c6bc19599",
+          "encKeyHex": "3bc749a2f7ca93a2eb21f415c25edd7fae77ce59064563a9cd5e45ae2d6d4465"
+        }
+      ]
+    },
+    {
+      "words": 20,
+      "entropyHex": "6465666768696a6b6c6d6e6f707172737475767778797a7b70",
+      "indices": [
+        401,
+        598,
+        409,
+        872,
+        421,
+        678,
+        731,
+        109,
+        441,
+        759,
+        28,
+        370,
+        461,
+        839,
+        349,
+        631,
+        481,
+        919,
+        670,
+        882
+      ],
+      "phrase": "gentle muscle glove subway habit petri recall beef honey rigid agent flag idle sort fade obtain item trade pattern swarm",
+      "masterHex": "498b0ede36e26a8008782f83d9b0a0734554d3105b9bcf31b8477d2cf15a8a95",
+      "safety": "wolf erupt staff",
+      "rooms": [
+        {
+          "room": "",
+          "roomKeyHex": "1c5158adb0146fc12ff2949067c0e390a1d41d3e416e8af1c33e0f2326455eae",
+          "macKeyHex": "d4509149284b4bdea0b4d4fb931fbf9cc77122f2b28458c03fc6585af434944e",
+          "encKeyHex": "98fd95b47f6eb511b40106767d828fbec17726208eea95fca686a471b8377bdc"
+        },
+        {
+          "room": "bridge",
+          "roomKeyHex": "8ac3e71225d6e4c27e67e179d951ac7dbe0190f1a6d21767060b3aa53283ae95",
+          "macKeyHex": "8958ec6ef8d97904f96b0bdebcc10ac605b489e29004de44c946dc3b1d99cb98",
+          "encKeyHex": "c031ce63c31333abd90e4105b664a8c89a0391fa021c1dc83884d8c13715f19a"
+        },
+        {
+          "room": " Cafe\u0301 ",
+          "roomKeyHex": "4c82adb92abd59168be3df580eebb5a35e702ccae4b58334781fb8550f446767",
+          "macKeyHex": "ee187348b984f91972d753581c39b798643e03251166a66f78c7ba77b07daf5f",
+          "encKeyHex": "03e6a22c6c6bec973763a566c9525d3b232b560a8b477fdce35032bc0a80a4c5"
+        }
+      ]
+    }
+  ],
+  "frames": [
+    {
+      "phrase": 1,
+      "room": "",
+      "tagBits": 64,
+      "sentSlot": 0,
+      "flags": 0,
+      "salt": 0,
+      "bodyBits": "",
+      "tagHex": "28d3cbf227601823",
+      "nonceHex": "5f1484c4ee15b2a1ec844836",
+      "frameHex": "28d3cbf2276018238fe75730",
+      "frameBitCount": 92
+    },
+    {
+      "phrase": 1,
+      "room": "",
+      "tagBits": 64,
+      "sentSlot": 123456,
+      "flags": 1,
+      "salt": 37,
+      "bodyBits": "1011001110001",
+      "tagHex": "80eef19e12c8f567",
+      "nonceHex": "eeb77b87a9b45873f6a4bb36",
+      "frameHex": "80eef19e12c8f567f68d03f2b480",
+      "frameBitCount": 105
+    },
+    {
+      "phrase": 1,
+      "room": "bridge",
+      "tagBits": 64,
+      "sentSlot": 1048575,
+      "flags": 0,
+      "salt": 63,
+      "bodyBits": "000000000000000000000000000000000000",
+      "tagHex": "90801f4c7a2e6920",
+      "nonceHex": "5c94d8886b69f1171553e636",
+      "frameHex": "90801f4c7a2e6920b92ab5a625d5fae3",
+      "frameBitCount": 128
+    },
+    {
+      "phrase": 1,
+      "room": "bridge",
+      "tagBits": 128,
+      "sentSlot": 54321,
+      "flags": 2,
+      "salt": 5,
+      "bodyBits": "1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+      "tagHex": "5256147969d7b85cd6f381ea25f4bca6",
+      "nonceHex": "ca5c911df7a5439a19bc0010",
+      "frameHex": "5256147969d7b85cd6f381ea25f4bca6d679009bd2f716eea9be1e6e32504391",
+      "frameBitCount": 256
+    },
+    {
+      "phrase": 1,
+      "room": "Bridge",
+      "tagBits": 128,
+      "sentSlot": 54321,
+      "flags": 2,
+      "salt": 5,
+      "bodyBits": "1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+      "tagHex": "5256147969d7b85cd6f381ea25f4bca6",
+      "nonceHex": "ca5c911df7a5439a19bc0010",
+      "frameHex": "5256147969d7b85cd6f381ea25f4bca6d679009bd2f716eea9be1e6e32504391",
+      "frameBitCount": 256
+    },
+    {
+      "phrase": 0,
+      "room": "",
+      "tagBits": 128,
+      "sentSlot": 777,
+      "flags": 1,
+      "salt": 21,
+      "bodyBits": "01010101010101010101010101010101010101010101010101010101010101010101010101010101",
+      "tagHex": "c976536c56e1af81b3395875b7294930",
+      "nonceHex": "a1d2b0e4fb7560292b363e38",
+      "frameHex": "c976536c56e1af81b3395875b7294930e1478c17023865dcba21b3aed3f0",
+      "frameBitCount": 236
+    },
+    {
+      "phrase": 2,
+      "room": "north",
+      "tagBits": 64,
+      "sentSlot": 9,
+      "flags": 0,
+      "salt": 9,
+      "bodyBits": "110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110110",
+      "tagHex": "4c64e8516e67c7c5",
+      "nonceHex": "fd8db178cf808f8c353681e4",
+      "frameHex": "4c64e8516e67c7c5a9ffcf355fd2578bd389a2e534b72c38",
+      "frameBitCount": 191
+    },
+    {
+      "phrase": 1,
+      "room": " Cafe\u0301 ",
+      "tagBits": 128,
+      "sentSlot": 4242,
+      "flags": 1,
+      "salt": 17,
+      "bodyBits": "101010101010101010101010101010101010101010101010101010101010",
+      "tagHex": "4a7fece5f873c52d7f6a7972fb298264",
+      "nonceHex": "325c5e19899f7acbf7a148e7",
+      "frameHex": "4a7fece5f873c52d7f6a7972fb298264910fbc65c4e89a23bc985e",
+      "frameBitCount": 216
+    },
+    {
+      "phrase": 1,
+      "room": "caf\u00e9",
+      "tagBits": 128,
+      "sentSlot": 4242,
+      "flags": 1,
+      "salt": 17,
+      "bodyBits": "101010101010101010101010101010101010101010101010101010101010",
+      "tagHex": "4a7fece5f873c52d7f6a7972fb298264",
+      "nonceHex": "325c5e19899f7acbf7a148e7",
+      "frameHex": "4a7fece5f873c52d7f6a7972fb298264910fbc65c4e89a23bc985e",
+      "frameBitCount": 216
+    }
+  ]
+}
