@@ -9,7 +9,7 @@ extension View {
     }
 }
 
-/// Keeps a conversation at its newest message, as Harold asked: it opens at the bottom, follows every
+/// Keeps a conversation at its newest message, as the owner asked: it opens at the bottom, follows every
 /// new message (sent or received, even when the person had scrolled up to read history), and stays at
 /// the bottom when the keyboard opens or closes, the message box grows a line, or a bubble grows
 /// (e.g. "waiting" turning into "sent").

@@ -22,7 +22,7 @@ final class ComposeModelTests: XCTestCase {
         _ = try GroupBook(vault: vault).add(name: "Maple", prepared: PreparedGroup(phrase: try Phrase.generate(words: 10)))
     }
 
-    /// Harold's rule: if the app crashes or is killed, nothing typed in Send remains.
+    /// the owner's rule: if the app crashes or is killed, nothing typed in Send remains.
     func testDraftDoesNotSurviveRelaunch() throws {
         let vault = makeVault()
         try addGroup(vault)

@@ -1,6 +1,6 @@
 import XCTest
 
-/// Receive: Undo down to no words must not crash. And Harold's rule: if the app is killed or crashes,
+/// Receive: Undo down to no words must not crash. And the owner's rule: if the app is killed or crashes,
 /// nothing from Send or Receive is there when it opens again (Chat may keep its messages).
 final class ReceiveUndoAndRelaunchUITests: XCTestCase {
     override func setUp() { continueAfterFailure = false }

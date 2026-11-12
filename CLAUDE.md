@@ -49,7 +49,7 @@ Gate A (engineering complete) is not Gate B (ready for release).
 
 The App Store is blocked: an FCC attorney review of encrypted radio traffic and an independent
 cryptographer review are still open (`docs/launch-blockers.md` rows 5 and 6, also 1 and 7). So when
-Harold says DLChat is good for release ("push it to Apple", "ship it", "release it"), that message
+The owner says DLChat is good for release ("push it to Apple", "ship it", "release it"), that message
 is his approval for a **TestFlight** release, run end to end without asking:
 
 1. Merge the open PRs he named into feat/dlchat-foundation (only the ones he named), and work in a fresh worktree off origin/feat/dlchat-foundation.

@@ -31,7 +31,7 @@ final class GroupModel {
     let vault: Vault
     private let book: GroupBook
     /// Unsent Send text per group (`nil` key: no group yet). Memory only: a crash, kill or relaunch
-    /// leaves no draft behind (Harold's rule: nothing from Send or Receive survives the app closing).
+    /// leaves no draft behind (the owner's rule: nothing from Send or Receive survives the app closing).
     @ObservationIgnored private var drafts: [UUID?: String] = [:]
     /// The key sets for `groups` as last read, see `keySets()`. Dropped on every `reload()`, so on a wipe too.
     @ObservationIgnored private var keySetCache: (groups: [ChatGroup], sets: [KeySet])?

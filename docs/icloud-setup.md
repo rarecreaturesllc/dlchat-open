@@ -1,7 +1,7 @@
 # iCloud push setup (owner steps, about 10 minutes)
 
 Done already through the App Store Connect API (2026-11-07): Push Notifications and iCloud enabled on
-the app ID com.harrisonfischberg.dlchat (H2WG93K4PD).
+the app ID com.harrisonfischberg.dlchat.
 
 1. **Create the iCloud container.** developer.apple.com > Certificates, Identifiers & Profiles >
    Identifiers > the "+" button > iCloud Containers > Continue. Description: DLChat. Identifier:

@@ -22,7 +22,7 @@ Impeccable hooks (from `~/projects/.claude/settings.local.json`, kept): `Session
 
 ## Other environment
 
-- GitHub CLI authenticated as HarrisonFischberg. Private repo `HarrisonFischberg/dlchat` created with owner approval.
+- GitHub CLI authenticated as the owner. A private working repo exists with owner approval.
 - Node v24.22.0, Python 3.9.6.
 - Branch: `feat/dlchat-foundation` (`propose_branch` unavailable, used `git switch -c`).
 

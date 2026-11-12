@@ -5,9 +5,9 @@ max_score: 40
 na_heuristics: 
 p0_count: 0
 p1_count: 3
-target_identity: "file:/Users/harrison/projects/dlchat/DLChat/Concepts/C/ConceptC.swift"
+target_identity: "file:/home/projects/dlchat/DLChat/Concepts/C/ConceptC.swift"
 target_fingerprint: "sha256:4e4e10be94bf120e47ad5ba76483ac399e4e97715a5dfe8f59222a24e6aef6cd"
-target_path: /Users/harrison/projects/dlchat/DLChat/Concepts/C/ConceptC.swift
+target_path: ~/projects/dlchat/DLChat/Concepts/C/ConceptC.swift
 timestamp: 2026-11-03T04-03-24Z
 slug: dlchat-concepts-c-conceptc-swift
 ---

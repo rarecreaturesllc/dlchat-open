@@ -46,7 +46,7 @@ final class ChatDrawerUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["chat-drawer"].exists)
     }
 
-    /// Harold's report: scroll the drawer, open a chat, tap Chats, and the drawer had jumped to the top.
+    /// the owner's report: scroll the drawer, open a chat, tap Chats, and the drawer had jumped to the top.
     func testDrawerKeepsItsPlaceAfterAChat() throws {
         let app = XCUIApplication()
         // Large text, so the drawer is sure to be taller than the screen.
