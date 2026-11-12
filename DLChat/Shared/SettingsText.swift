@@ -1,7 +1,7 @@
 import Foundation
 
-/// Plain-language copy for Settings, and the message export. No legal entity, contact or hosted URL
-/// exists yet (launch blockers 4 and 7), so none is named here. Nothing below claims legal review.
+/// Plain-language copy for Settings, and the message export. The publisher is Rare Creatures LLC; no
+/// contact or hosted URL exists yet (launch blockers 4 and 7). Nothing below claims legal review.
 enum SettingsText {
     static let protectedList = [
         "Messages in Chat and History are sealed on this phone and excluded from backups. What you type in Send and Receive is kept in memory only: closing the app, or a crash, erases it.",
@@ -60,9 +60,9 @@ enum SettingsText {
 
     static let terms = Document(id: "terms", title: "Terms", paragraphs: [
         "DLChat is free, open source software under the GNU General Public License, version 3. You use it at your own risk. It is provided as it is, with no warranty: no promise that it will work, be available, or keep a message private against every threat. Read what is and is not protected in Settings.",
-        "You are responsible for how you use it, including any radio rules where you are. This is not legal advice, and DLChat is not approved or certified by any regulator.",
+        "You are responsible for how you use it. If you choose to use DLChat together with any radio equipment, you are responsible for following the laws and license conditions for that equipment and band. This is not legal advice, and DLChat is not approved or certified by any regulator.",
         "Keep your phrase on paper. If you lose it, or wipe the phone, nobody can recover your messages.",
-        "These are plain-language terms. They have not been reviewed by a lawyer, and no legal entity or contact is named yet.",
+        "DLChat is developed and published by Rare Creatures LLC. These are plain-language terms.",
     ])
 
     static let licenses = Document(id: "licenses", title: "Licenses", paragraphs: [

@@ -21,7 +21,9 @@ risk.
 **Radio rules are your responsibility.** The Meshtastic radio feature is off until you turn it on
 and accept its notice. By turning it on, you confirm you will use a radio and region setting that
 are allowed where you are, and that you alone are responsible for what your radio transmits.
-DLChat will not send while the radio is set to licensed mode.
+DLChat will not send while the radio is set to licensed mode. If you choose to use DLChat together
+with any radio equipment, you are responsible for following the laws and license conditions for
+that equipment and band.
 
 ## Building
 
@@ -36,7 +38,7 @@ Data the app sends and where it goes: `docs/data-inventory.md`. Third-party code
 
 ## License
 
-Copyright (C) 2026 Rare Creatures LLC
+Copyright (C) 2026 Rare Creatures LLC. DLChat is developed and published by Rare Creatures LLC.
 
 This program is free software: you can redistribute it and/or modify it under the terms of the
 GNU General Public License as published by the Free Software Foundation, either version 3 of the
