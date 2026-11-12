@@ -62,7 +62,7 @@ enum SettingsText {
         "DLChat is free, open source software under the GNU General Public License, version 3. You use it at your own risk. It is provided as it is, with no warranty: no promise that it will work, be available, or keep a message private against every threat. Read what is and is not protected in Settings.",
         "You are responsible for how you use it. If you choose to use DLChat together with any radio equipment, you are responsible for following the laws and license conditions for that equipment and band. This is not legal advice, and DLChat is not approved or certified by any regulator.",
         "Keep your phrase on paper. If you lose it, or wipe the phone, nobody can recover your messages.",
-        "DLChat is developed and published by Rare Creatures LLC. These are plain-language terms.",
+        "DLChat is developed and published by Rare Creatures LLC. These are plain-language terms. They have not been reviewed by a lawyer.",
     ])
 
     static let licenses = Document(id: "licenses", title: "Licenses", paragraphs: [
