@@ -1,18 +1,18 @@
 import Foundation
 
-/// The radio-rules notice (blueprint section 13). Shown once, before the first use of sound over a
-/// radio, and always readable again from the Safety sheet. It states the risk and claims nothing is
-/// legal, approved or certified. Whether it has been shown is a plain flag: it holds no secret.
+/// The Meshtastic radio rules notice. Shown, with "I accept", before the radio can be turned on in
+/// Settings, and readable again from Settings. It states the risk and claims nothing is legal,
+/// approved or certified. Words and sound are for in person and chats, so they have no notice.
+/// `seen` is a flag from older builds that showed this before sound; a wipe still clears it.
 enum RadioNotice {
     static let defaultsKey = "radioNoticeSeen"
 
-    static let title = "Before you use a radio"
+    static let title = "Before you use the Meshtastic radio"
 
     static let paragraphs = [
-        "Radio rules differ by country and by service. In the United States, GMRS rules prohibit coded messages or messages with hidden meanings, and amateur radio rules prohibit messages encoded to obscure their meaning, apart from a narrow exception for emergencies when normal systems are down.",
-        "DLChat messages are encrypted. Sending them over a radio may be prohibited outside a real emergency, depending on the radio service and where you are.",
-        "DLChat does not transmit anything itself. You hold the radio and you are responsible for how you use it. This is not legal advice, and DLChat is not approved or certified by any radio regulator.",
-        "QR codes and copy and paste do not use a radio. The practice drill uses none of them.",
+        "The Meshtastic radio sends on unlicensed radio bands, such as 902 to 928 MHz in the United States and 868 MHz in Europe. Each country sets its own rules for them, such as power, channels and how often a radio may send.",
+        "Encrypted messages may be prohibited on licensed radio services, so DLChat will not send while your radio is set to licensed mode. Only use a radio and region setting that are allowed where you are.",
+        "You are responsible for what your radio transmits. This is not legal advice, and DLChat is not approved or certified by any radio regulator.",
     ]
 
     /// Turning the Meshtastic radio on: the person takes responsibility before it can start.

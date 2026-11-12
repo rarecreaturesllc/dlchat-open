@@ -1,1 +1,1 @@
-Turn a message into words you can read out over a walkie-talkie. Only phones that have your group's phrase can turn them back into the message.
+Turn a message into words or sound that only your group can read. Share them in person, chat over Tor, or send through your Meshtastic radio.

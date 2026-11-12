@@ -6,7 +6,6 @@ import SwiftUI
 struct ReceiveView: View {
     let decode: DecodeModel
     let groups: GroupModel
-    let radioGate: (@escaping () -> Void) -> Void
     /// Acknowledged: posts "Decrypted" in the given group and room's chat and opens Chat. Returns the problem to show, or nil once sent.
     var acknowledge: ((UUID, String) -> String?)?
     @FocusState private var focused: Bool
@@ -98,11 +97,11 @@ struct ReceiveView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         // The deck, as on Send: the other ways in as keys, then the one green bar.
-        // Words read out on a call or over a radio: put them in one at a time.
+        // Words read out in person or on a call: put them in one at a time.
         Button("Decrypt word by word") { pasteFocused = false; pasted = ""; decode.wordByWord = true; focused = true }
             .buttonStyle(.dlSecondary).accessibilityIdentifier("decrypt-word-by-word")
         KeyRow {
-            Button { radioGate { listening = true } } label: { KeyLabel(title: "Listen", icon: "ear") }.accessibilityIdentifier("listen")
+            Button { listening = true } label: { KeyLabel(title: "Listen", icon: "ear") }.accessibilityIdentifier("listen")
             Button { scanning = true } label: { KeyLabel(title: "Scan QR", icon: "qrcode.viewfinder") }.accessibilityIdentifier("scan-qr")
             Button { openingSound = true } label: { KeyLabel(title: "Open a sound file", icon: "folder") }.accessibilityIdentifier("open-sound")
         }

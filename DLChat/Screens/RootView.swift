@@ -29,9 +29,6 @@ struct RootView: View {
     @State private var invite: GroupInvite?
     @State private var inviteCheck: Result<PreparedGroup, JoinProblem>?
     @State private var picking = false
-    @State private var radioNotice = false
-    @State private var radioContinue: (() -> Void)?
-    @State private var radioAccepted = false
     @Environment(\.scenePhase) private var scenePhase
     /// DLChat went inactive only because the Face ID sheet came up (see the scene phase handler).
     @State private var faceIDSheetUp = false
@@ -152,14 +149,6 @@ struct RootView: View {
         }
     }
 
-    /// Runs `action` now if the radio-rules notice has been seen, otherwise after the person accepts it.
-    private func afterRadioNotice(_ action: @escaping () -> Void) {
-        if RadioNotice.seen() { action(); return }
-        radioContinue = action
-        radioAccepted = false
-        radioNotice = true
-    }
-
     /// Receive > Acknowledged: posts "Decrypted" (never the message) in the chat the message was sealed for,
     /// then shows that chat. Returns the problem to show, or nil once it is on its way.
     private func acknowledge(groupID: UUID, room: String) -> String? {
@@ -177,12 +166,12 @@ struct RootView: View {
 
     /// Closes every screen and sheet at once, without animation (they may hold plaintext). Returns whether any was open.
     @discardableResult private func closeAll() -> Bool {
-        let open = reading || showingQR || playingTones || encryptingWords || settings || radioNotice || picking || creating || welcoming || addingContact
+        let open = reading || showingQR || playingTones || encryptingWords || settings || picking || creating || welcoming || addingContact
         var instant = Transaction()
         instant.disablesAnimations = true
         withTransaction(instant) {
             reading = false; showingQR = false; playingTones = false; encryptingWords = false
-            settings = false; radioNotice = false; picking = false; creating = false; welcoming = false; addingContact = false
+            settings = false; picking = false; creating = false; welcoming = false; addingContact = false
         }
         return open
     }
@@ -309,7 +298,7 @@ struct RootView: View {
                     .padding(.horizontal, DLSpace.md).padding(.top, DLSpace.sm).padding(.bottom, DLSpace.xs)
 
                 Group {
-                    if mode == 3 { MeshMapView(mesh: mesh, online: online) } else if mode == 2 { chatTab } else if mode == 0 { SendView(compose: compose, show: showWords, encryptWords: encryptWords, showQR: showQR, showTones: { afterRadioNotice(showTones) }) } else { ReceiveView(decode: decode, groups: groups, radioGate: afterRadioNotice, acknowledge: acknowledge).id(groups.wipes) }
+                    if mode == 3 { MeshMapView(mesh: mesh, online: online) } else if mode == 2 { chatTab } else if mode == 0 { SendView(compose: compose, show: showWords, encryptWords: encryptWords, showQR: showQR, showTones: showTones) } else { ReceiveView(decode: decode, groups: groups, acknowledge: acknowledge).id(groups.wipes) }
                 }
                 // Swiping the page left or right does what the tab slider does. An open conversation stays open.
                 .pageSwipe($mode, count: 4, leadingEdge: mode == 2 && chatSelection != nil ? EdgeSwipeBack<EmptyView, EmptyView>.edge : 0)
@@ -360,13 +349,6 @@ struct RootView: View {
                 mode = 2
             }) { addingContact = false; incomingContact = nil }
         }
-        .sheet(isPresented: $radioNotice, onDismiss: {
-            if radioAccepted { radioContinue?() }
-            radioContinue = nil
-        }) {
-            RadioNoticeView(onContinue: { RadioNotice.markSeen(); radioAccepted = true; radioNotice = false }) { radioNotice = false }
-                .interactiveDismissDisabled()
-        }
         .sheet(isPresented: $picking) {
             GroupListView(groups: groups, mesh: mesh, openMesh: { conversation in
                 mesh.openConversation(conversation)
@@ -415,7 +397,7 @@ struct RootView: View {
             if phase == .background { mesh.setForeground(false); mesh.saveNow() } else if phase == .active { mesh.setForeground(true); mesh.purgeExpired() }
         }
         .onChange(of: groups.groups) { _, _ in compose.syncGroup(); decode.refreshKeys(); online.refresh() }
-        // The radio is on by default and starts once there is a group to carry, so Bluetooth is asked for after setup.
+        // The radio is off until turned on in Settings; once on, it starts when there is a group to carry.
         .onChange(of: groups.groups.isEmpty, initial: true) { _, empty in if !empty { mesh.startIfWanted() } }
         .onChange(of: groups.activeGroup?.id) { _, _ in compose.syncGroup() }
         // A wipe from the lock screen must not leave open screens behind it. No animation: they may hold plaintext.
@@ -460,9 +442,8 @@ struct RootView: View {
             case .tones: showTones()
             case .create: creating = true
             case .groups: picking = true
-            case .practice, .radio, .settings, .safety: settings = true
+            case .practice, .radio, .notice, .settings, .safety: settings = true
             case .meshmap: mode = 3
-            case .notice: afterRadioNotice(showTones)
             case .chat:
                 if let group = groups.activeGroup { chatSelection = .group(group.id) }
                 mode = 2

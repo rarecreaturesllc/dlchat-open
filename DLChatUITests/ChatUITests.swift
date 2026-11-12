@@ -345,10 +345,6 @@ final class ChatUITests: XCTestCase {
         let key = app.buttons[sound ? "play-tones" : "copy-words"]
         XCTAssertTrue(key.waitForExistence(timeout: 10))
         key.tap()
-        if sound {
-            let notice = app.buttons["radio-notice-continue"]
-            if notice.waitForExistence(timeout: 3) { notice.tap() }
-        }
         let post = app.buttons["post-chat-send"]
         XCTAssertTrue(post.waitForExistence(timeout: 10))
         for _ in 0..<3 where !post.isHittable { app.swipeUp() }

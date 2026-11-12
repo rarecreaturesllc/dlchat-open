@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Plays the message as radio tones. Wipe stays one shield tap away.
+/// Plays the message as sound for a phone nearby to hear. Wipe stays one shield tap away.
 struct TonePlayView: View {
     let samples: [Float]
     let lock: AppLock
@@ -35,12 +35,12 @@ struct TonePlayView: View {
                             Readout(value: String(format: "%02d", seconds), legend: "seconds of sound", detail: "approximate")
                                 .accessibilityElement(children: .ignore)
                                 .accessibilityLabel("About \(seconds) seconds of sound").accessibilityIdentifier("tones-length")
-                            Text("Hold the phone speaker close to the radio microphone and set the phone volume to about three quarters. Press the radio's talk button, then Play. The sound starts with a steady tone so a voice-activated radio can open.")
+                            Text("Hold this phone's speaker close to the other phone's microphone, set the volume to about three quarters, then tap Play.")
                                 .font(.dl(.body)).foregroundStyle(Color.dlSoft)
                             ProgressView(value: player.progress).progressViewStyle(DLMeterStyle()).accessibilityLabel("Playback progress")
                             status
                             ForEach(player.warnings, id: \.self) { RouteWarning(text: $0) }
-                            Text("Only phones in this group can read it. Radio tones can be heard by anyone, and they cannot be decoded without the phrase.")
+                            Text("Only phones in this group can read it. Anyone nearby can hear the sound, but it cannot be decoded without the phrase.")
                                 .font(.footnote).foregroundStyle(Color.dlSoft)
                             Spacer(minLength: DLSpace.md)
                             if let chat, let bound = Binding($target) {
@@ -111,7 +111,7 @@ struct ToneChat {
     let post: (ChatTarget) -> String?
 }
 
-/// Listens for a tone burst from a radio speaker. Foreground only: it stops when the app is not on screen.
+/// Listens for a tone burst from a phone speaker nearby. Foreground only: it stops when the app is not on screen.
 struct ToneListenView: View {
     let onHeard: (Data) -> Bool
     let done: () -> Void
@@ -136,7 +136,7 @@ struct ToneListenView: View {
                         statusBlock
                         ForEach(listener.warnings, id: \.self) { RouteWarning(text: $0) }
                         if let note { RouteWarning(text: note) }
-                        Text("Hold the phone microphone near the radio speaker and turn the radio up. The message appears when a whole burst has been heard. The microphone only listens for tones. Nothing it hears is saved or sent.")
+                        Text("Hold this phone's microphone near the other phone's speaker. The message appears when a whole burst has been heard. The microphone only listens for tones. Nothing it hears is saved or sent.")
                             .font(.footnote).foregroundStyle(Color.dlSoft)
                     }
                 }

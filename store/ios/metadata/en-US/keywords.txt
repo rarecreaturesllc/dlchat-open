@@ -1,1 +1,1 @@
-walkie talkie,radio,encrypt,offline,emergency,power outage,meshtastic,mesh,qr code,tor,neighbors
+encrypt,offline,private,phrase,emergency,power outage,meshtastic,mesh,qr code,tor,group chat

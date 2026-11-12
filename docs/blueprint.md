@@ -305,6 +305,10 @@ transmits: sound, a QR on screen, or a Nearby frame. See `data-inventory.md`.
 
 ## 13. Radio rules (not legal advice; needs review)
 
+> **Superseded 2026-11-12 (owner decision):** DLChat is no longer meant for walkie-talkies or other
+> voice radios. Words and sound are for in person and chats; the only radio is Meshtastic on
+> unlicensed bands, off until the user accepts its notice. The analysis below is kept as history.
+
 This affects the product premise, so it is stated plainly. US rules read 2026-11-02:
 
 | Service | What the text says |

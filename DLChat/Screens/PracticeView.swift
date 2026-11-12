@@ -89,7 +89,7 @@ struct PracticeView: View {
 
     private var intro: some View {
         VStack(alignment: .leading, spacing: DLSpace.md) {
-            Text("Try it without a radio").font(.dl(.title, .bold)).foregroundStyle(Color.dlText)
+            Text("Try it out").font(.dl(.title, .bold)).foregroundStyle(Color.dlText)
             Text("You will read a short practice message out as words, then type the words back the way a listener would. It uses a throwaway phrase made just for this drill. Your groups and messages are not touched and nothing is saved or sent.")
                 .font(.dl(.body)).foregroundStyle(Color.dlSoft)
             if let problem = model.problem {

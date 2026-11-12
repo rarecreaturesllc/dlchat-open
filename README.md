@@ -1,8 +1,8 @@
 # DLChat
 
 Offline, grid-down encrypted messaging for iPhone. A group shares a generated phrase of 10, 15 or
-20 words. DLChat turns each message into gibberish words you can read aloud, audio tones you can
-play into a radio, a QR code, or a packet sent over a Meshtastic radio or public Nostr relays
+20 words. DLChat turns each message into gibberish words you can read out, a sound another phone
+can hear, a QR code, or a packet sent over your own Meshtastic radio or public Nostr relays
 (through Tor by default). Only people who hold the phrase can read it.
 
 ## Status
@@ -18,12 +18,10 @@ DLChat is free, open source software provided **"as is", without warranty of any
 extent permitted by law (see sections 15 and 16 of the license). You use it entirely at your own
 risk.
 
-**Radio laws are your responsibility.** Many radio services restrict or forbid encrypted or
-obscured messages. In the United States, for example, amateur (ham) radio rules prohibit messages
-encoded to hide their meaning, and FRS, GMRS and other services have their own rules. The radio
-features in DLChat are off until you turn them on. By turning them on, you confirm you know and
-will follow the laws that apply to the radio, band and country you use, and that you alone are
-responsible for what you transmit.
+**Radio rules are your responsibility.** The Meshtastic radio feature is off until you turn it on
+and accept its notice. By turning it on, you confirm you will use a radio and region setting that
+are allowed where you are, and that you alone are responsible for what your radio transmits.
+DLChat will not send while the radio is set to licensed mode.
 
 ## Building
 

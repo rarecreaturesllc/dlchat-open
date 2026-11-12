@@ -12,19 +12,19 @@ Native SwiftUI with CryptoKit. No network code, no AI, no third-party services. 
 
 ## Users
 
-Neighborhood groups and preparedness-minded households using walkie-talkies during a grid-down event. Mostly non-technical, often stressed, frequently outdoors, in low light, one-handed or wearing gloves. Technical hobbyists (hams, preppers) are a secondary audience; the default flow serves the neighbor first.
+Neighborhood groups, families and preparedness-minded households who want private messages that keep working when cell service or the internet is down. Mostly non-technical, often stressed, frequently outdoors, in low light, one-handed or wearing gloves. Technical hobbyists (hams, preppers) are a secondary audience; the default flow serves the neighbor first.
 
 ## Product Purpose
 
-DLChat lets people within walkie-talkie range talk privately on public airwaves with no internet. A group shares a generated secret phrase of 10, 15 or 20 words. The app derives a key from it, encrypts a message, and renders the result as gibberish words that can be read aloud, as audio tones played into a radio, as a QR code, or sent over Bluetooth. Only phrase holders can decrypt. Success: a neighbor with no setup beyond the phrase can send and read a message in under a minute.
+DLChat lets a group message privately in person, over the internet through Tor, or through their own Meshtastic radio. A group shares a generated secret phrase of 10, 15 or 20 words. The app derives a key from it, encrypts a message, and renders the result as gibberish words that can be read out, as a sound another phone can hear, as a QR code, or as a sealed packet for relays or the radio. Only phrase holders can decrypt. (Updated 2026-11-12: DLChat is no longer pitched for walkie-talkies.)
 
 ## Positioning
 
-Works over ordinary open radio with nothing but a spoken phrase: no accounts, no pairing, no servers, no network. A neighboring chat app that needs a network, a mesh, or an account cannot truthfully make that claim.
+Works with nothing but a shared phrase: no accounts, no servers of its own, and paths that keep working when the network is down (in person, QR, Meshtastic). A chat app that needs a working network or an account cannot truthfully make that claim.
 
 ## Operating Context
 
-Power or cell outage; neighbors on FRS/GMRS-style handhelds listening in on shared channels. Messages are spoken as word lists, played as tones into a radio mic, scanned in person, or relayed phone to phone. Phones run on limited battery. Eavesdroppers can hear everything on the channel.
+Power or cell outage, or simply wanting privacy from networks. Messages are read out as word lists or played as sound between phones nearby, shown as QR, posted through relays over Tor, or sent through the person's own Meshtastic radio.
 
 ## Capabilities and Constraints
 

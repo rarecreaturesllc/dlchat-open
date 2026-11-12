@@ -15,7 +15,7 @@ struct SettingsView: View {
     @State private var notifyOn = Notifier.isOn()
     @State private var notifyDenied = false
     @State private var practicing = Launch().screen == .practice
-    @State private var showingRules = Launch().screen == .radio
+    @State private var showingRules = Launch().screen == .radio || Launch().screen == .notice
     /// Turning the Meshtastic radio on for the first time: the radio rules must be accepted first.
     @State private var acceptingRadio = false
     @State private var document: SettingsText.Document?
@@ -275,8 +275,8 @@ struct SettingsView: View {
     // MARK: Help
 
     @ViewBuilder private var helpSection: some View {
-        SettingsLink(title: "Practice drill", detail: "Try sending and receiving without a radio", id: "practice-open") { practicing = true }
-        SettingsLink(title: "Radio rules", detail: "Read the radio rules notice again", id: "radio-rules-open") { showingRules = true }
+        SettingsLink(title: "Practice drill", detail: "Try sending and receiving with a practice phrase", id: "practice-open") { practicing = true }
+        SettingsLink(title: "Meshtastic radio rules", detail: "Read the radio rules notice again", id: "radio-rules-open") { showingRules = true }
 
         SettingsFold(title: "Send debug logs", id: "settings-fold-debug-logs") {
             note("To \(SupportMail.address)")

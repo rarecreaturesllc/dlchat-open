@@ -1,6 +1,7 @@
 import XCTest
 
-/// The practice drill from the Safety sheet, and the radio-rules notice before the first radio use.
+/// The practice drill from the Safety sheet, and the Meshtastic radio rules notice that must be
+/// accepted before the radio can be turned on. Sound has no notice: DLChat is not for walkie-talkies.
 /// Uses the throwaway `-seed-demo` vault; `-reset-demo` also clears the notice flag.
 final class PracticeAndNoticeUITests: XCTestCase {
     override func setUp() {
@@ -56,31 +57,37 @@ final class PracticeAndNoticeUITests: XCTestCase {
         XCTAssertEqual(decoded.label, "meet at the bridge at noon")
     }
 
-    func testNoticeShowsOnceAtFirstRadioUseAndStaysInSafety() throws {
+    /// Encrypt Sound opens straight away, with no radio notice in front of it.
+    func testSoundOpensWithNoRadioNotice() throws {
         let app = launch()
-        let play = app.buttons["play-tones"]
-        play.tap()
-
-        let title = app.staticTexts["radio-notice-title"]
-        XCTAssertTrue(title.waitForExistence(timeout: 10))
-        app.buttons["radio-notice-continue"].tap()
+        app.buttons["play-tones"].tap()
         XCTAssertTrue(app.buttons["tones-close"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.staticTexts["radio-notice-title"].exists)
         app.buttons["tones-close"].tap()
+    }
 
-        // Second radio use: no notice.
-        XCTAssertTrue(play.waitForExistence(timeout: 10))
-        play.tap()
-        XCTAssertTrue(app.buttons["tones-close"].waitForExistence(timeout: 10))
-        XCTAssertFalse(title.exists)
-        app.buttons["tones-close"].tap()
-
-        // Still readable from Settings.
+    /// The radio switch starts off; turning it on shows the rules with "I accept", and Not now leaves it off.
+    /// The rules stay readable from Settings. (Accepting is left to a device: it raises the Bluetooth prompt.)
+    func testRadioNeedsTheRulesAcceptedAndNotNowLeavesItOff() throws {
+        let app = launch()
         app.buttons["settings-button"].tap()
+        let radio = app.switches["settings-radio"]
+        XCTAssertTrue(radio.waitForExistence(timeout: 10))
+        for _ in 0..<6 where !radio.isHittable { app.swipeUp() }
+        XCTAssertEqual(radio.value as? String, "0")
+        radio.switches.firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["radio-notice-title"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["radio-notice-extra"].exists)
+        XCTAssertTrue(app.buttons["radio-notice-continue"].exists)
+        app.buttons["radio-notice-cancel"].tap()
+        XCTAssertTrue(radio.waitForExistence(timeout: 10))
+        XCTAssertEqual(radio.value as? String, "0")
+
         let rules = app.buttons["radio-rules-open"]
-        XCTAssertTrue(rules.waitForExistence(timeout: 10))
         for _ in 0..<6 where !rules.isHittable { app.swipeUp() }
         rules.tap()
         XCTAssertTrue(app.staticTexts["radio-notice-title"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["radio-notice-continue"].exists, "read-only from Settings")
     }
 
     func testSettingsShowsDocumentsAndRetention() throws {
@@ -94,14 +101,5 @@ final class PracticeAndNoticeUITests: XCTestCase {
         for _ in 0..<2 where !terms.isHittable { app.swipeUp() }
         terms.tap()
         XCTAssertTrue(app.staticTexts["Terms"].waitForExistence(timeout: 10))
-    }
-
-    func testDecliningTheNoticeDoesNotOpenTones() throws {
-        let app = launch()
-        app.buttons["play-tones"].tap()
-        XCTAssertTrue(app.buttons["radio-notice-cancel"].waitForExistence(timeout: 10))
-        app.buttons["radio-notice-cancel"].tap()
-        XCTAssertTrue(app.buttons["play-tones"].waitForExistence(timeout: 10))
-        XCTAssertFalse(app.buttons["tones-close"].exists)
     }
 }

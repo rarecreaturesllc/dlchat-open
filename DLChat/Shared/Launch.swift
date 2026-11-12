@@ -11,7 +11,7 @@ enum Screen: String, Hashable, CaseIterable {
 }
 
 /// Launch argument for repeatable screenshots: `-screen create|compose|readout|decode|qr|scan|tones|listen|practice|radio|notice|settings|groups|chat|safety|meshmap`.
-/// `practice`, `radio` and `settings` open Settings with the drill or the rules on top; `notice` shows the first-use gate.
+/// `practice`, `radio` and `settings` open Settings with the drill or the rules on top; `notice` is the same as `radio`.
 struct Launch {
     let screen: Screen?
     init(_ args: [String] = ProcessInfo.processInfo.arguments) {

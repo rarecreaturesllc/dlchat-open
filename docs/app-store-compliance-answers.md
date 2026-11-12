@@ -17,16 +17,15 @@ What we can say truthfully to App Review (this text is also in
 - DLChat does not transmit on any radio band by itself.
 - Meshtastic radios use license-free ISM bands (in the US, 902 to 928 MHz under FCC Part 15),
   where encrypted data is allowed. Meshtastic already encrypts its own channels.
-- Reading words aloud or playing tones over a voice radio is the user's choice. Some radio
-  services restrict coded messages outside emergencies (in the US, GMRS under 47 CFR
-  95.1733(a)(3) and amateur radio under 97.113(a)(4); amateur rule 97.403 allows any means of
-  communication for the immediate safety of life when normal systems are down).
-- The app shows a notice the first time the user picks a radio method. It says rules vary by
-  country and service and that the user must follow them.
+- DLChat is not meant for walkie-talkies or other voice radios (owner decision 2026-11-12). Words and
+  sound are for in person and chats, and the app and listing never suggest using them over a radio.
+- The Meshtastic radio is off by default. Turning it on needs the user to accept a notice: the
+  radio uses unlicensed bands, follow your country's rules, you are responsible for what you send.
+  DLChat will not send while the radio is in licensed mode.
 - The listing and the app never say DLChat is "legal everywhere" or "FCC approved".
 
-Still open, and only the owner can close it: `docs/launch-blockers.md` row 5 asks for an
-attorney's read of the GMRS and amateur rules and of countries outside the US. The owner has
+Still open, and only the owner can close it: `docs/launch-blockers.md` row 5. A lawyer's first
+answer (2026-11-12, JustAnswer) is summarised there. The owner has
 said to proceed. If App Review asks about Guideline 5 (Legal), send the points above.
 
 ## 2. Encryption export compliance (the App Store Connect questions)
