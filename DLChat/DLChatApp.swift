@@ -19,7 +19,7 @@ struct DLChatApp: App {
 /// for measuring how fast DLChat opens. Off unless that argument is passed; it prints step names and
 /// times only, never content.
 enum LaunchTiming {
-    static let on = ProcessInfo.processInfo.arguments.contains("-launch-timing")
+    static let on = LaunchSwitches.arguments.contains("-launch-timing")
 
     /// The process start time from the kernel, so time spent before `main` counts too.
     private static let start: Date = {

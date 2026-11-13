@@ -274,7 +274,7 @@ final class GroupModel {
 extension GroupModel {
     /// `-seed-demo` for simulator screenshots: a separate vault with one throwaway group and a draft.
     /// Only seeds when that vault is empty. Add `-reset-demo` for a clean start.
-    static func make(arguments: [String] = ProcessInfo.processInfo.arguments) -> GroupModel {
+    static func make(arguments: [String] = LaunchSwitches.arguments) -> GroupModel {
         guard arguments.contains("-seed-demo") else {
             let vault = Vault()
             vault.dropSecretsLeftFromEarlierInstall()
@@ -288,7 +288,7 @@ extension GroupModel {
         return GroupModel(vault: vault)
     }
 
-    func seedDemoIfNeeded(arguments: [String] = ProcessInfo.processInfo.arguments) async {
+    func seedDemoIfNeeded(arguments: [String] = LaunchSwitches.arguments) async {
         // `-no-demo-group`: the throwaway vault starts with no group, as a first run does (welcome UI test).
         guard arguments.contains("-seed-demo"), !arguments.contains("-no-demo-group"), groups.isEmpty else { return }
         guard let prepared = try? await prepareNew(words: 10) else { return }
@@ -305,7 +305,7 @@ extension GroupModel {
     }
 
     /// `-seed-history N`: fills the demo group's history (see `GroupBook.seedHistory`).
-    func seedHistoryIfAsked(arguments: [String] = ProcessInfo.processInfo.arguments) {
+    func seedHistoryIfAsked(arguments: [String] = LaunchSwitches.arguments) {
         guard arguments.contains("-seed-demo"), let i = arguments.firstIndex(of: "-seed-history"),
               arguments.indices.contains(i + 1), let count = Int(arguments[i + 1]) else { return }
         try? book.seedHistory(count)

@@ -30,7 +30,7 @@ returns to the drawer. Sections collapse (remembered in UserDefaults, no content
 - **Handshake**: the accepter makes its own identity, `SK = HKDF(X25519(idB, idA), salt: invite secret)`,
   and starts the ratchet as initiator with a KEM encapsulation to the invite's ML-KEM key. Its first
   message (a hello carrying its identity, route, queue and name) is sealed with a key from the invite
-  secret and sent to the invite's mailbox/queue. Both phones then show 6 safety words from both identities (3 until build 17; the first three are unchanged).
+  secret and sent to the invite's mailbox/queue. Both phones then show 8 safety words from both identities and a hash of the whole invite (version 2, build 29 on; the invite says so in one byte after the name, the answer in its first-message tag, and the contact secret also takes the first ML-KEM secret). An invite changed on its way can have that byte cut off, which puts both phones back on the 6 words: 8 words mean the whole invite was checked, 6 mean it was not, until version 1 is refused outright. If either phone runs an older build they show the 6 words from both identities alone (3 until build 17; the first three are unchanged).
 - **Ratchet**: Signal's Double Ratchet (X25519, HKDF-SHA256, HMAC chains, ChaCha20-Poly1305, header as
   AD, up to 1000 skipped keys). Post-quantum step: every new sending chain also encapsulates an ML-KEM-768
   secret to the peer's newest KEM key and mixes it into the root KDF with the DH output; every message

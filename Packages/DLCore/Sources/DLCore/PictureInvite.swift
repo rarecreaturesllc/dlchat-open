@@ -19,6 +19,9 @@ public enum PictureInvite {
     /// At least 5 (50 bits): the picture may sit in a chat backup for years, and 4 words (40 bits) at
     /// 600,000 PBKDF2 rounds falls to about a GPU-year of guessing. Older 4-word pictures still open.
     public static let passwordWordCounts = 5...6
+    /// New pictures start at six words (60 bits): the password is far weaker than the phrase it locks, so it
+    /// is the easiest way in for anyone who keeps a copy of the picture. Five stays available as a choice.
+    public static let defaultPasswordWords = 6
 
     public enum UnlockError: Error, Equatable {
         case wrongPassword
@@ -28,7 +31,7 @@ public enum PictureInvite {
     // MARK: Password
 
     /// Random words from the radio word list (10 bits each), to be read to the friend by voice.
-    public static func makePassword(words count: Int = 5) -> [String] {
+    public static func makePassword(words count: Int = defaultPasswordWords) -> [String] {
         precondition(passwordWordCounts.contains(count), "unsupported password length")
         var bytes = [UInt8](repeating: 0, count: count * 2)
         precondition(SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess, "no randomness")

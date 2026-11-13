@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// Evolve flags: each candidate improvement lives behind one. Off in an App Store build no matter what;
-/// test builds (Debug, TestFlight) can turn them on from Settings (long-press the version row) or with
-/// the launch argument `-evolve_all YES`. Overrides live in their own defaults suite, apart from app data.
+/// test builds (Debug, TestFlight) can turn them on from Settings (long-press the version row), and Debug
+/// builds also with the launch argument `-evolve_all YES`. Overrides live in their own defaults suite, apart from app data.
 struct Experiment: Hashable, Identifiable {
     let key: String
     let title: String
@@ -25,7 +25,7 @@ enum Experiments {
 
     static func isOn(_ experiment: Experiment) -> Bool {
         guard canOverride else { return false }
-        if ProcessInfo.processInfo.arguments.contains("-evolve_all") { return true }
+        if LaunchSwitches.arguments.contains("-evolve_all") { return true }
         return store.bool(forKey: experiment.key)
     }
 

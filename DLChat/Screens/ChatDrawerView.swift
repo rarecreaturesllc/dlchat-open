@@ -17,10 +17,14 @@ struct ChatDrawerView: View {
     let direct: DirectModel
     let mesh: MeshtasticModel
     let open: (ChatSelection) -> Void
+    /// The Add rows, shown only while their section is empty.
     let newGroup: () -> Void
-    /// Opens the group list: choose the active group, reorder, remove, see a phrase.
-    let manageGroups: () -> Void
     let addContact: () -> Void
+    /// Each section's Manage screen, always reachable (also when the section is empty).
+    let manageGroups: () -> Void
+    let manageContacts: () -> Void
+    let manageMesh: () -> Void
+    private var prefs: MeshPrefs { MeshPrefs.shared }
     @State private var showingNodes = false
     @AppStorage("drawer.collapsed") private var collapsedRaw = ""
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -40,7 +44,7 @@ struct ChatDrawerView: View {
             List {
                 section("groups", title: "DL Group Chats", count: groups.groups.count,
                         label: "Only people with your group's picture and password, or its phrase, can read these.",
-                        manage: groups.groups.isEmpty ? nil : manageGroups) {
+                        manage: ManageKey(label: "Manage groups", id: "drawer-manage-groups", action: manageGroups)) {
                     if groups.groups.isEmpty {
                         note("No groups yet.")
                     }
@@ -50,11 +54,12 @@ struct ChatDrawerView: View {
                         }
                         .accessibilityIdentifier("drawer-group-\(group.name)")
                     }
-                    addRow("New group (picture invite)", id: "drawer-new-group", action: newGroup)
+                    if groups.groups.isEmpty { addRow("New group (picture invite)", id: "drawer-new-group", action: newGroup) }
                 }
 
                 section("direct", title: "Internet Messages", count: direct.contacts.count,
-                        label: "End-to-end encrypted with post-quantum keys, sent only over Tor. No phone number or account.") {
+                        label: "End-to-end encrypted with post-quantum keys, sent only over Tor. No phone number or account.",
+                        manage: ManageKey(label: "Manage Internet Messages", id: "drawer-manage-direct", action: manageContacts)) {
                     if direct.contacts.isEmpty {
                         note("Chat one-to-one with anyone who has DLChat. Add them in person with a QR code, or send a one-time invite link.")
                     }
@@ -64,20 +69,23 @@ struct ChatDrawerView: View {
                         }
                         .accessibilityIdentifier("drawer-contact-\(contact.name)")
                     }
-                    addRow("Add a contact", id: "drawer-add-contact", action: addContact)
+                    if direct.contacts.isEmpty { addRow("Add a contact", id: "drawer-add-contact", action: addContact) }
                 }
 
-                section("public", title: "Meshtastic Public", count: mesh.channels.count,
-                        label: "Public: anyone with a Meshtastic radio nearby can read these.", warn: true) {
+                section("public", title: "Meshtastic Public", count: shownChannels.count,
+                        label: "Public: anyone with a Meshtastic radio nearby can read these.", warn: true,
+                        manage: ManageKey(label: "Manage Meshtastic", id: "drawer-manage-public", action: manageMesh)) {
                     if !mesh.isOn {
                         note("Turn on the Meshtastic radio in Settings to see its channels.")
                     } else if mesh.channels.isEmpty {
                         note("Your radio's channels appear here once it connects.")
+                    } else if shownChannels.isEmpty {
+                        note("Every channel is hidden. Show them again in Manage.")
                     } else {
-                        ForEach(mesh.channels) { channel in
+                        ForEach(shownChannels) { channel in
                             row(icon: "antenna.radiowaves.left.and.right", title: channel.title(preset: mesh.presetName),
                                 subtitle: channel.keyIsPublic ? "Public channel" : "Shared-key channel",
-                                unread: mesh.unread[.channel(channel.index)] ?? 0) {
+                                unread: prefs.mutedChannels.contains(channel.index) ? 0 : mesh.unread[.channel(channel.index)] ?? 0) {
                                 open(.mesh(.channel(channel.index)))
                             }
                             .accessibilityIdentifier("drawer-channel-\(channel.index)")
@@ -86,7 +94,8 @@ struct ChatDrawerView: View {
                 }
 
                 section("nodes", title: "Meshtastic Nodes", count: mesh.directNodes.count,
-                        label: "Encrypted to that radio's key, but radio names and who talks to whom are visible on air.") {
+                        label: "Encrypted to that radio's key, but radio names and who talks to whom are visible on air.",
+                        manage: ManageKey(label: "Manage Meshtastic", id: "drawer-manage-nodes", action: manageMesh)) {
                     if !mesh.isOn {
                         note("Turn on the Meshtastic radio in Settings to message other radios.")
                     } else {
@@ -109,6 +118,8 @@ struct ChatDrawerView: View {
         .accessibilityIdentifier("chat-drawer")
     }
 
+    private var shownChannels: [Meshtastic.ChannelInfo] { mesh.channels.filter { !prefs.hiddenChannels.contains($0.index) } }
+
     private func subtitle(_ contact: DirectContact) -> String {
         guard let last = direct.lastMessage(contact.id) else { return "Read your safety words to each other once" }
         return (last.outgoing ? "You: " : "") + last.text
@@ -116,7 +127,7 @@ struct ChatDrawerView: View {
 
     @ViewBuilder
     private func section<Content: View>(_ key: String, title: String, count: Int, label: String, warn: Bool = false,
-                                        manage: (() -> Void)? = nil,
+                                        manage: ManageKey? = nil,
                                         @ViewBuilder content: () -> Content) -> some View {
         let isCollapsed = collapsed.contains(key)
         Section {
@@ -148,17 +159,24 @@ struct ChatDrawerView: View {
             // Its own button, so it never folds the section, and it stays when the section is folded.
             .overlay(alignment: typeSize.isAccessibilitySize ? .bottomLeading : .topTrailing) {
                 if let manage {
-                    Button { Haptics.tap(); manage() } label: { manageLabel }
+                    Button { Haptics.tap(); manage.action() } label: { manageLabel }
                         .buttonStyle(.dlPress)
                         .padding(.trailing, typeSize.isAccessibilitySize ? 0 : Self.chevronWidth + 8)
-                        .accessibilityLabel("Manage groups")
-                        .accessibilityIdentifier("drawer-manage-groups")
+                        .accessibilityLabel(manage.label)
+                        .accessibilityIdentifier(manage.id)
                 }
             }
         }
     }
 
     private static let chevronWidth: CGFloat = 16
+
+    /// One section's Manage key: what it says to VoiceOver, its test id, and where it goes.
+    struct ManageKey {
+        let label: String
+        let id: String
+        let action: () -> Void
+    }
 
     /// The small, quiet Manage key in the groups header: a 44pt target around a compact legend.
     private var manageLabel: some View {

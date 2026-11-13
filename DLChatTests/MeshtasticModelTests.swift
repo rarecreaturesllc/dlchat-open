@@ -425,6 +425,58 @@ final class MeshtasticModelTests: XCTestCase {
         XCTAssertNil(p.mesh.locationNote)
     }
 
+    /// The LoRa section of the last set_config this phone sent to its radio.
+    private func lastLoRaSent(_ p: Phone) -> [Meshtastic.Field]? {
+        p.radio.written.compactMap { Meshtastic.Reader.fields($0)?.bytes(1) }.compactMap(p.radio.adminPayload)
+            .compactMap { $0.bytes(34).flatMap(Meshtastic.Reader.fields)?.bytes(6).flatMap(Meshtastic.Reader.fields) }.last
+    }
+
+    func testRadioSettingsChangeOnlyMyConnectedRadioAndKeepTheRegion() throws {
+        let p = try phone(try Phrase.generate(words: 10), node: 0xA1) { $0.region = 3 }
+        XCTAssertFalse(p.mesh.setHopLimit(5), "not connected")
+        p.mesh.setOn(true); p.mesh.choose(p.mesh.radios[0])
+        XCTAssertEqual(p.mesh.hopLimit, 3)
+        XCTAssertTrue(p.mesh.canChangeSettings)
+        let before = p.radio.adminCount
+        XCTAssertTrue(p.mesh.setHopLimit(5))
+        XCTAssertEqual(p.radio.adminCount - before, 3, "one batch: begin, LoRa, commit")
+        let lora = try XCTUnwrap(lastLoRaSent(p))
+        XCTAssertEqual(lora.lastVarint(8), 5)
+        XCTAssertEqual(lora.lastVarint(7), 3, "region sent back unchanged")
+        XCTAssertEqual(p.radio.region, 3)
+        XCTAssertFalse(p.mesh.setHopLimit(9), "out of range: nothing sent")
+        XCTAssertFalse(p.mesh.setRole(Meshtastic.Role.clientMute), "the radio has not sent its device settings")
+        XCTAssertEqual(p.radio.adminCount - before, 3)
+    }
+
+    func testRadioSettingsWaitForThisIsMyRadio() async throws {
+        let p = try phone(try Phrase.generate(words: 10), node: 0xA1) { $0.region = 1 }
+        let mesh = MeshtasticModel(defaults: p.defaults, country: { "US" }, pickDelay: .zero) { p.radio }
+        mesh.setOn(true)
+        for _ in 0..<50 where mesh.status != .ready { try await Task.sleep(for: .milliseconds(20)) }
+        XCTAssertEqual(mesh.status, .ready)
+        XCTAssertFalse(mesh.isMine)
+        XCTAssertFalse(mesh.setTxPower(20))
+        XCTAssertEqual(p.radio.adminCount, 0)
+        mesh.confirmMine()
+        XCTAssertTrue(mesh.setTxPower(20))
+    }
+
+    func testLocationSharingTurnedOnStaysOnAfterReconnecting() throws {
+        let p = try phone(try Phrase.generate(words: 10), node: 0xA1) { $0.region = 1 }
+        p.mesh.setOn(true); p.mesh.choose(p.mesh.radios[0])
+        XCTAssertTrue(p.mesh.setLocationSharing(true, precision: 13, intervalSecs: 1800))
+        XCTAssertTrue(p.radio.gpsOn)
+        XCTAssertEqual(p.radio.precision, 13)
+        p.mesh.letGo(); p.mesh.useHere()  // reconnect reads settings again
+        XCTAssertTrue(p.radio.gpsOn, "not turned off again on connection")
+        XCTAssertEqual(p.mesh.positionPrecision, 13)
+        XCTAssertTrue(p.mesh.setLocationSharing(false))
+        XCTAssertFalse(p.radio.gpsOn)
+        XCTAssertEqual(p.radio.precision, 0)
+        XCTAssertFalse(p.mesh.sharesLocation)
+    }
+
     func testCollectsOtherRadiosItHearsForTheMeshMap() throws {
         let p = try phone(try Phrase.generate(words: 10), node: 0xA1)
         p.mesh.setOn(true); p.mesh.choose(p.mesh.radios[0])

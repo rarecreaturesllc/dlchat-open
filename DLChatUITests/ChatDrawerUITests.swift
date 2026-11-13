@@ -122,6 +122,43 @@ final class ChatDrawerUITests: XCTestCase {
         XCTAssertTrue(app.buttons["drawer-group-Demo group"].waitForExistence(timeout: 5))
     }
 
+    /// Every section has its own Manage key, shown even while the section is empty or folded; the two
+    /// Meshtastic sections share one screen.
+    func testEverySectionHasItsOwnManageKey() throws {
+        let app = launch()
+        app.buttons["Chat"].tap()
+        for (id, label) in [("drawer-manage-groups", "Manage groups"), ("drawer-manage-direct", "Manage Internet Messages"),
+                            ("drawer-manage-public", "Manage Meshtastic"), ("drawer-manage-nodes", "Manage Meshtastic")] {
+            let key = app.buttons[id]
+            for _ in 0..<4 where !key.waitForExistence(timeout: 2) { app.swipeUp() }
+            XCTAssertTrue(key.exists, id)
+            XCTAssertEqual(key.label, label)
+        }
+        // No contacts yet, so Add stays in the section; a group exists, so its Add row is gone.
+        XCTAssertFalse(app.buttons["drawer-new-group"].exists)
+    }
+
+    func testInternetManageHasAddContactAndRelays() throws {
+        let app = launch()
+        app.openManage("drawer-manage-direct")
+        XCTAssertTrue(app.buttons["manage-add-contact"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["manage-relays"].exists)
+        app.buttons["manage-add-contact"].tap()
+        XCTAssertTrue(app.buttons["contact-make-invite"].waitForExistence(timeout: 5))
+        app.buttons["add-contact-close"].tap()
+        app.buttons["manage-relays"].tap()
+        XCTAssertTrue(app.buttons["im-route-both"].waitForExistence(timeout: 5))
+    }
+
+    func testMeshManageOffersStatusAndHistoryAndKeepsTheRadioOff() throws {
+        let app = launch()
+        app.openManage("drawer-manage-nodes")
+        XCTAssertTrue(app.staticTexts["mesh-manage-status"].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.staticTexts["mesh-manage-status"].label, "Radio off", "managing never turns the radio on")
+        XCTAssertTrue(app.descendants(matching: .any)["mesh-history"].exists)
+        XCTAssertFalse(app.descendants(matching: .any)["mesh-settings"].exists, "radio settings need a connected, confirmed radio")
+    }
+
     /// A swipe right from the left edge of an open chat goes back to the Chats list; the same swipe from
     /// the middle of the screen does not (that is swipe to reply), and a short edge drag settles back.
     func testSwipeFromTheLeftEdgeGoesBackToChats() throws {

@@ -32,7 +32,7 @@ struct LockView: View {
     /// (the Simulator answers Face ID at once). Always false in release builds.
     static var holdsBiometrics: Bool {
         #if DEBUG
-        ProcessInfo.processInfo.arguments.contains("-hold-faceid")
+        LaunchSwitches.arguments.contains("-hold-faceid")
         #else
         false
         #endif

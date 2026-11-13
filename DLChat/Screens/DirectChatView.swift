@@ -221,7 +221,7 @@ struct DirectContactDetails: View {
     }
 }
 
-/// The safety words (six for a contact), with what to do with them.
+/// The safety words (eight for a contact; six when either phone joined on a build before 29), with what to do with them.
 struct SafetyWordsPanel: View {
     let words: [String]
 

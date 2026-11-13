@@ -20,7 +20,7 @@ final class MeshMapModel: NSObject, CLLocationManagerDelegate {
         super.init()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
-        if Launch().screen == .meshmap, ProcessInfo.processInfo.arguments.contains("-seed-demo") { seedDemo() }
+        if Launch().screen == .meshmap, LaunchSwitches.arguments.contains("-seed-demo") { seedDemo() }
     }
 
     // MARK: Location

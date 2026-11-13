@@ -19,6 +19,9 @@ struct MeshText: Identifiable, Equatable, Codable {
         case relayed
         /// The recipient's radio confirmed it (direct only).
         case delivered
+        /// A channel message the radio transmitted, but it never heard another radio repeat it. Meshtastic
+        /// gets no receipt for a channel message, so this is not a failure: radios in range may still have it.
+        case unheard
         case failed(String)
     }
 

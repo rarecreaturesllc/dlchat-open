@@ -17,7 +17,7 @@ struct HoldToReveal<Content: View>: View {
     /// UI tests cannot read text that shows only while a finger is down; DEBUG builds can start shown.
     private static var revealedForTests: Bool {
         #if DEBUG
-        ProcessInfo.processInfo.arguments.contains("-reveal-held")
+        LaunchSwitches.arguments.contains("-reveal-held")
         #else
         false
         #endif

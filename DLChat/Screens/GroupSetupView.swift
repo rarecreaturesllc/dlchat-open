@@ -363,7 +363,7 @@ struct GroupSetupView: View {
     /// password is `demoPicturePassword`, since a test cannot pick a photo from the library.
     static let demoPicturePassword = "maple river stone owl badge"
     private func openDemoPicture() async {
-        let arguments = ProcessInfo.processInfo.arguments
+        let arguments = LaunchSwitches.arguments
         guard arguments.contains("-seed-demo"), arguments.contains("-demo-picture-invite"), invite == nil else { return }
         let password = Self.demoPicturePassword
         let payload = await Task.detached { () -> [UInt8]? in

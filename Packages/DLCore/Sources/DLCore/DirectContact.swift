@@ -59,7 +59,7 @@ public struct OwnQueue: Codable, Equatable, Sendable {
 // MARK: Invite
 
 /// A one-time contact invite: `dlchat://contact#<base64url>`, shown as a QR code or sent as a link.
-/// Whoever opens it first becomes the contact; both phones then show the same six safety words,
+/// Whoever opens it first becomes the contact; both phones then show the same safety words,
 /// which the two people read to each other to be sure nobody else took it.
 public struct DirectInvite: Equatable, Sendable {
     public let identity: Data      // X25519, also the first ratchet key
@@ -68,8 +68,18 @@ public struct DirectInvite: Equatable, Sendable {
     public let route: DirectRoute
     public let onion: OnionQueue?
     public let name: String
+    /// What the inviter's build can do. 1: builds up to 28 (six safety words from the two identity keys).
+    /// 2: eight safety words that cover the whole invite, and a contact secret with the ML-KEM secret mixed in.
+    /// It travels as one byte after the name, which older builds ignore; an invite without it is version 1.
+    ///
+    /// Nothing protects the byte, and it cannot while older builds must still be answered: someone able to
+    /// change an invite on its way can cut it off, and both phones then show the six words of version 1,
+    /// which is no worse than builds up to 28 but no better. Eight words mean both phones checked the whole
+    /// invite; six mean they did not. Refuse version 1 once no supported build makes it.
+    public let version: UInt8
 
     static let magic = Data("DLC1".utf8)
+    public static let currentVersion: UInt8 = 2
     public static let lifetime: TimeInterval = 24 * 3600
     public static let maxName = 40
 
@@ -83,14 +93,28 @@ public struct DirectInvite: Equatable, Sendable {
         w.field(Data((onion?.relay ?? "").utf8))
         w.field(Data((onion?.sendID ?? "").utf8))
         w.field(Data(Self.trim(name).utf8))
+        if version >= 2 { w.u8(version) }
         return w.data
     }
 
     public var url: URL { URL(string: "dlchat://contact#" + encoded.base64URL)! }
 
-    public init(identity: Data, kemPublic: Data, secret: Data, route: DirectRoute, onion: OnionQueue?, name: String) {
+    public init(identity: Data, kemPublic: Data, secret: Data, route: DirectRoute, onion: OnionQueue?, name: String,
+                version: UInt8 = DirectInvite.currentVersion) {
         self.identity = identity; self.kemPublic = kemPublic; self.secret = secret
         self.route = route; self.onion = onion; self.name = Self.trim(name)
+        self.version = Self.known(version)
+    }
+
+    /// Versions this build does not know count as the newest one it does.
+    static func known(_ version: UInt8) -> UInt8 { min(max(version, 1), currentVersion) }
+
+    /// What the version 2 safety words cover: a hash of every field of the invite (both keys, the secret,
+    /// the route, the queue and the name), taken from the invite as this build writes it, so the inviter
+    /// and whoever opened it hash the same bytes. A changed or swapped field changes the words.
+    var safetyBinding: Data {
+        let canonical = (try? DirectInvite(encoded: encoded))?.encoded ?? encoded
+        return Data(SHA256.hash(data: Data("DLChat/direct/v2/invite".utf8) + canonical))
     }
 
     public init(encoded: Data) throws {
@@ -105,6 +129,7 @@ public struct DirectInvite: Equatable, Sendable {
         let send = String(decoding: try r.field(), as: UTF8.self)
         onion = relay.isEmpty || send.isEmpty ? nil : OnionQueue(relay: relay, sendID: send)
         name = Self.trim(String(decoding: try r.field(), as: UTF8.self))
+        version = r.remaining >= 1 ? Self.known(try r.u8()) : 1
     }
 
     /// A contact invite link (or the same text from a QR code), or nil for anything else.
@@ -179,14 +204,27 @@ public struct DirectContact: Codable, Equatable, Identifiable, Sendable {
     public let created: Date
     /// The pending invite this contact came from (inviter side), so a second copy of the first message is ignored.
     public let inviteID: UUID?
+    /// `DirectInvite.safetyBinding` of the invite this contact came from, when both phones run a build
+    /// that knows version 2. Nil for contacts made with or by an older build: those keep the six words.
+    var safetyBinding: Data? = nil
 
-    /// Six list words both phones show; read them to each other once.
+    /// List words both phones show; read them to each other once.
     ///
-    /// Six, not three: whoever answers an invite picks their key after seeing the inviter's, so someone who
-    /// took the invite could try keys until three words (30 bits) matched. Sixty bits is out of reach for that.
-    /// The first three are the words builds up to 17 showed, so an older phone's three still match.
+    /// Version 2 (both phones on build 29 or later): eight words, 80 bits, from both identity keys and a
+    /// hash of the whole invite. Whoever answers an invite picks their key after seeing the inviter's, so
+    /// someone who took the invite could try keys until the words matched: 60 bits is within reach of a very
+    /// well funded attacker inside the invite's 24 hours, 80 is not. Covering the invite means a swapped
+    /// ML-KEM key (the one part a future quantum computer in the middle could change unseen) changes the words.
+    ///
+    /// Version 1 (either phone on an older build): the six words builds 18 to 28 showed, from the two
+    /// identity keys alone. Their first three are the words builds up to 17 showed.
     public var safetyWords: [String] {
         let pair = [identityPublic, theirIdentity].sorted { $0.lexicographicallyPrecedes($1) }
+        if let safetyBinding {
+            let digest = Array(SHA256.hash(data: Data("DLChat/direct/v2/safety".utf8) + pair[0] + pair[1] + safetyBinding))
+            let bits = Bits(bytes: digest, count: 80)
+            return (0..<8).map { WordList.word(at: Int(bits.value(at: $0 * 10, width: 10))) }
+        }
         let digest = Array(SHA256.hash(data: Data("DLChat/direct/v1/safety".utf8) + pair[0] + pair[1]))
         let value = digest.prefix(8).reduce(UInt64(0)) { $0 << 8 | UInt64($1) }
         return [54, 44, 34, 24, 14, 4].map { WordList.word(at: Int((value >> UInt64($0)) & 1023)) }
@@ -210,6 +248,12 @@ public struct DirectContact: Codable, Equatable, Identifiable, Sendable {
     static func sharedSecrets(dh: Data, inviteSecret: Data) -> (ratchet: Data, contact: Data) {
         let sk = DirectKDF.hkdf(dh, salt: inviteSecret, info: "DLChat/direct/v1/sk")
         return (DirectKDF.hkdf(sk, info: "DLChat/direct/v1/ratchet"), DirectKDF.hkdf(sk, info: "DLChat/direct/v1/contact"))
+    }
+
+    /// Version 2: the contact secret (outer wrap key and mailbox addresses) also takes the first ML-KEM
+    /// secret, so someone who later breaks X25519 and holds the invite still cannot work out the mailboxes.
+    static func contactSecretV2(classical: Data, kemSecret: Data) -> Data {
+        DirectKDF.hkdf(classical + kemSecret, info: "DLChat/direct/v2/contact")
     }
 }
 
@@ -264,7 +308,10 @@ public struct DirectEnvelope: Equatable, Sendable {
 public enum Direct {
     /// Sealed sizes: the length only says which bucket.
     static let buckets = [4096, 8192, 16384]
-    static let helloTag: UInt8 = 1, messageTag: UInt8 = 2
+    /// `helloTag`: a first message from a build up to 28, or to an invite made by one. `helloV2Tag`: the
+    /// same bytes from a build that knows version 2, answering a version 2 invite. Older builds refuse it,
+    /// which is why it is only sent to an invite that says its maker understands it.
+    static let helloTag: UInt8 = 1, messageTag: UInt8 = 2, helloV2Tag: UInt8 = 3
 
     // MARK: Handshake
 
@@ -273,10 +320,14 @@ public enum Direct {
                               now: Date = Date()) throws -> (DirectContact, DirectEnvelope) {
         let identity = DirectKDF.newX25519()
         let secrets = DirectContact.sharedSecrets(dh: try DirectKDF.dh(identity.privateKey, invite.identity), inviteSecret: invite.secret)
-        var ratchet = try DirectRatchet.initiator(sharedSecret: secrets.ratchet, theirRatchet: invite.identity, theirKEM: invite.kemPublic)
+        let started = try DirectRatchet.initiatorWithSecret(sharedSecret: secrets.ratchet, theirRatchet: invite.identity,
+                                                            theirKEM: invite.kemPublic)
+        var ratchet = started.ratchet
+        let kemSecret = started.kemSecret
         let first = try ratchet.encrypt(DirectMessage(kind: .hello, text: DirectInvite.trim(myName), sentAt: now).encoded)
+        let v2 = invite.version >= 2
         var w = ByteWriter()
-        w.u8(helloTag)
+        w.u8(v2 ? helloV2Tag : helloTag)
         w.bytes(identity.publicKey)
         w.u8(myRoute.flag)
         w.field(Data((myQueue?.relay ?? "").utf8))
@@ -284,8 +335,11 @@ public enum Direct {
         w.bytes(first)
         let contact = DirectContact(id: UUID(), name: invite.name.isEmpty ? "New contact" : invite.name,
                                     identityPublic: identity.publicKey, theirIdentity: invite.identity, ratchet: ratchet,
-                                    contactSecret: secrets.contact, myRoute: myRoute, theirRoute: invite.route,
-                                    theirQueue: invite.onion, myQueue: myQueue, created: now, inviteID: nil)
+                                    contactSecret: v2 ? DirectContact.contactSecretV2(classical: secrets.contact, kemSecret: kemSecret)
+                                                      : secrets.contact,
+                                    myRoute: myRoute, theirRoute: invite.route,
+                                    theirQueue: invite.onion, myQueue: myQueue, created: now, inviteID: nil,
+                                    safetyBinding: v2 ? invite.safetyBinding : nil)
         return (contact, DirectEnvelope(bytes: try seal(w.data, key: invite.wrapKey)))
     }
 
@@ -294,7 +348,9 @@ public enum Direct {
         guard !pending.isExpired(now: now) else { throw DirectError.expiredInvite }
         let payload = try open(envelope.bytes, key: pending.invite.wrapKey)
         var r = ByteReader(payload)
-        guard try r.u8() == helloTag else { throw DirectError.notForUs }
+        let tag = try r.u8()
+        guard tag == helloTag || tag == helloV2Tag else { throw DirectError.notForUs }
+        let v2 = tag == helloV2Tag
         let theirIdentity = try r.bytes(32)
         guard let theirRoute = DirectRoute(flag: try r.u8()) else { throw DirectError.malformed }
         let relay = String(decoding: try r.field(), as: UTF8.self)
@@ -305,12 +361,21 @@ public enum Direct {
                                               ratchetPublic: pending.identityPublic, kemSeed: pending.kemSeed, kemPublic: pending.kemPublic)
         let message = try DirectMessage(encoded: try ratchet.decrypt(first))
         guard message.kind == .hello else { throw DirectError.malformed }
+        var contactSecret = secrets.contact
+        if v2 {
+            // The ML-KEM secret behind the first message, which the ratchet just checked by opening it.
+            var header = ByteReader(first)
+            guard let ciphertext = try DirectRatchet.Header.decode(&header).kemCiphertext else { throw DirectError.malformed }
+            contactSecret = DirectContact.contactSecretV2(
+                classical: secrets.contact, kemSecret: try PQ.decapsulate(seed: pending.kemSeed, ciphertext: ciphertext))
+        }
         let name = DirectInvite.trim(message.text)
         let contact = DirectContact(id: UUID(), name: name.isEmpty ? "New contact" : name, identityPublic: pending.identityPublic,
-                                    theirIdentity: theirIdentity, ratchet: ratchet, contactSecret: secrets.contact,
+                                    theirIdentity: theirIdentity, ratchet: ratchet, contactSecret: contactSecret,
                                     myRoute: pending.route, theirRoute: theirRoute,
                                     theirQueue: relay.isEmpty || send.isEmpty ? nil : OnionQueue(relay: relay, sendID: send),
-                                    myQueue: pending.queue, created: now, inviteID: pending.id)
+                                    myQueue: pending.queue, created: now, inviteID: pending.id,
+                                    safetyBinding: v2 ? pending.invite.safetyBinding : nil)
         return (contact, message)
     }
 

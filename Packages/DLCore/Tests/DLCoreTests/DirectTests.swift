@@ -84,12 +84,10 @@ final class DirectTests: XCTestCase {
     func testHandshakeGivesBothSidesTheSameSafetyWordsAndRoutes() throws {
         let (ana, ben, pending) = try pair()
         XCTAssertEqual(ana.safetyWords, ben.safetyWords)
-        XCTAssertEqual(ana.safetyWords.count, 6)
-        // The first three are the words builds up to 17 showed (the top 30 bits of the same hash).
-        let pair = [ana.identityPublic, ana.theirIdentity].sorted { $0.lexicographicallyPrecedes($1) }
-        let digest = Array(SHA256.hash(data: Data("DLChat/direct/v1/safety".utf8) + pair[0] + pair[1]))
-        let old = digest.prefix(4).reduce(UInt32(0)) { $0 << 8 | UInt32($1) }
-        XCTAssertEqual(Array(ana.safetyWords.prefix(3)), [22, 12, 2].map { WordList.word(at: Int((old >> UInt32($0)) & 1023)) })
+        // Two phones on this build: eight words that cover the whole invite.
+        XCTAssertEqual(ana.safetyWords.count, 8)
+        XCTAssertEqual(ana.safetyBinding, pending.invite.safetyBinding)
+        XCTAssertEqual(ben.safetyBinding, pending.invite.safetyBinding)
         XCTAssertEqual(ana.name, "Ben")
         XCTAssertEqual(ben.name, "Ana")
         XCTAssertEqual(ana.theirRoute, .both)
@@ -101,6 +99,143 @@ final class DirectTests: XCTestCase {
         XCTAssertTrue(ana.incomingMailboxes(now: now).contains(ben.outgoingMailbox(now: now)))
         XCTAssertTrue(ben.incomingMailboxes(now: now).contains(ana.outgoingMailbox(now: now)))
         XCTAssertNotEqual(ana.outgoingMailbox(now: now), ben.outgoingMailbox(now: now))
+    }
+
+    /// An invite as builds up to 28 write it: the same fields with no version byte after the name.
+    private func oldInvite(_ pending: PendingInvite) throws -> DirectInvite {
+        let invite = try DirectInvite(encoded: pending.invite.encoded.dropLast())
+        XCTAssertEqual(invite.version, 1)
+        return invite
+    }
+
+    func testInviteVersionTravelsAsOneByteOlderBuildsIgnore() throws {
+        let pending = try PendingInvite.make(name: "Ana", route: .publicRelays, queue: nil, now: now)
+        XCTAssertEqual(pending.invite.version, 2)
+        XCTAssertEqual(try DirectInvite(encoded: pending.invite.encoded).version, 2)
+        // Without the byte it is the invite an older build made, and writes back out without it.
+        let old = try oldInvite(pending)
+        XCTAssertEqual(old.encoded, pending.invite.encoded.dropLast())
+        XCTAssertEqual(old.identity, pending.invite.identity)
+        XCTAssertEqual(old.name, "Ana")
+        // A version from a newer build counts as the newest this build knows.
+        XCTAssertEqual(try DirectInvite(encoded: pending.invite.encoded.dropLast() + Data([9])).version, 2)
+    }
+
+    func testOlderBuildOnEitherSideKeepsTheSixWords() throws {
+        // Ben answers an invite from an older build: version 1 hello, six words, the old contact secret.
+        let pending = try PendingInvite.make(name: "Ana", route: .publicRelays, queue: nil, now: now)
+        let (ben, hello) = try Direct.accept(try oldInvite(pending), myName: "Ben", myRoute: .publicRelays, myQueue: nil, now: now)
+        XCTAssertEqual(try Direct.open(hello.bytes, key: pending.invite.wrapKey).first, Direct.helloTag)
+        // Ana (this build, or an older one: the bytes are the same) opens it as version 1 too.
+        let (ana, _) = try Direct.openHello(hello, pending: pending, now: now)
+        XCTAssertNil(ana.safetyBinding)
+        XCTAssertNil(ben.safetyBinding)
+        // The contact secret is the one an older build works out: X25519 and the invite secret, nothing more.
+        let classical = DirectContact.sharedSecrets(dh: try DirectKDF.dh(pending.identityPrivate, ben.identityPublic),
+                                                    inviteSecret: pending.secret).contact
+        XCTAssertEqual(ana.contactSecret, classical)
+        XCTAssertEqual(ben.contactSecret, classical)
+        XCTAssertEqual(ana.safetyWords, ben.safetyWords)
+        XCTAssertEqual(ana.safetyWords.count, 6)
+        // The first three are the words builds up to 17 showed (the top 30 bits of the same hash).
+        let pair = [ana.identityPublic, ana.theirIdentity].sorted { $0.lexicographicallyPrecedes($1) }
+        let digest = Array(SHA256.hash(data: Data("DLChat/direct/v1/safety".utf8) + pair[0] + pair[1]))
+        let old = digest.prefix(4).reduce(UInt32(0)) { $0 << 8 | UInt32($1) }
+        XCTAssertEqual(Array(ana.safetyWords.prefix(3)), [22, 12, 2].map { WordList.word(at: Int((old >> UInt32($0)) & 1023)) })
+        // And they still talk.
+        XCTAssertTrue(ana.incomingMailboxes(now: now).contains(ben.outgoingMailbox(now: now)))
+        let (_, envelope) = try Direct.seal(DirectMessage(text: "old and new"), for: ana)
+        XCTAssertEqual(try Direct.open(envelope, from: ben).1.text, "old and new")
+    }
+
+    func testVersionTwoHelloAndContactSecret() throws {
+        let pending = try PendingInvite.make(name: "Ana", route: .publicRelays, queue: nil, now: now)
+        let (ben, hello) = try Direct.accept(pending.invite, myName: "Ben", myRoute: .publicRelays, myQueue: nil, now: now)
+        XCTAssertEqual(try Direct.open(hello.bytes, key: pending.invite.wrapKey).first, Direct.helloV2Tag)
+        let (ana, _) = try Direct.openHello(hello, pending: pending, now: now)
+        // Both sides reach the same contact secret, and it is not the X25519-only one.
+        XCTAssertEqual(ana.contactSecret, ben.contactSecret)
+        let dh = try DirectKDF.dh(pending.identityPrivate, ben.identityPublic)
+        XCTAssertNotEqual(ana.contactSecret, DirectContact.sharedSecrets(dh: dh, inviteSecret: pending.secret).contact)
+        // A stored contact from before this build has no binding and loads as a six-word contact.
+        var json = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(ana)) as? [String: Any])
+        json["safetyBinding"] = nil
+        let stored = try JSONDecoder().decode(DirectContact.self, from: JSONSerialization.data(withJSONObject: json))
+        XCTAssertEqual(stored.safetyWords.count, 6)
+        // Saved and loaded as it is, it keeps its eight.
+        XCTAssertEqual(try JSONDecoder().decode(DirectContact.self, from: JSONEncoder().encode(ana)).safetyWords, ben.safetyWords)
+    }
+
+    func testSafetyWordsCoverEveryFieldOfTheInvite() throws {
+        let pending = try PendingInvite.make(name: "Ana", route: .publicRelays, queue: nil, now: now)
+        let invite = pending.invite
+        let (ben, _) = try Direct.accept(invite, myName: "Ben", myRoute: .publicRelays, myQueue: nil, now: now)
+        func words(_ changed: DirectInvite) -> [String] {
+            var copy = ben
+            copy.safetyBinding = changed.safetyBinding
+            return copy.safetyWords
+        }
+        XCTAssertEqual(words(invite), ben.safetyWords)
+        // A swapped ML-KEM key, with both identity keys left alone, changes the words.
+        let otherKEM = try PQ.generate().publicKey
+        let swapped = DirectInvite(identity: invite.identity, kemPublic: otherKEM, secret: invite.secret, route: invite.route,
+                                   onion: invite.onion, name: invite.name)
+        XCTAssertNotEqual(words(swapped), ben.safetyWords)
+        // So does a changed secret, route, queue or name.
+        let changes = [
+            DirectInvite(identity: invite.identity, kemPublic: invite.kemPublic, secret: Data(repeating: 7, count: 32),
+                         route: invite.route, onion: invite.onion, name: invite.name),
+            DirectInvite(identity: invite.identity, kemPublic: invite.kemPublic, secret: invite.secret, route: .both,
+                         onion: invite.onion, name: invite.name),
+            DirectInvite(identity: invite.identity, kemPublic: invite.kemPublic, secret: invite.secret, route: invite.route,
+                         onion: OnionQueue(relay: "http://evil.onion", sendID: "x"), name: invite.name),
+            DirectInvite(identity: invite.identity, kemPublic: invite.kemPublic, secret: invite.secret, route: invite.route,
+                         onion: invite.onion, name: "Eve"),
+        ]
+        for changed in changes { XCTAssertNotEqual(words(changed), ben.safetyWords) }
+    }
+
+    func testNewChainWithoutThePostQuantumPartIsRefused() throws {
+        var (ana, ben, _) = try pair()
+        // Ana's first reply starts a new chain, so Ben must ratchet. Strip the ML-KEM ciphertext from its header.
+        let (a2, envelope) = try Direct.seal(DirectMessage(text: "reply"), for: ana)
+        ana = a2
+        let payload = try Direct.open(envelope.bytes, key: ana.wrapKey)
+        var reader = ByteReader(payload.dropFirst())
+        let header = try DirectRatchet.Header.decode(&reader)
+        let body = reader.rest()
+        func resealed(_ change: (inout DirectRatchet.Header) -> Void) throws -> DirectEnvelope {
+            var h = header
+            change(&h)
+            return DirectEnvelope(bytes: try Direct.seal(Data([Direct.messageTag]) + h.encoded + body, key: ana.wrapKey))
+        }
+        let before = ben
+        XCTAssertThrowsError(try Direct.open(try resealed { $0.kemCiphertext = nil; $0.kemKeyID = nil }, from: ben)) {
+            XCTAssertEqual($0 as? DirectError, .malformed)
+        }
+        XCTAssertThrowsError(try Direct.open(try resealed { $0.kemPublic = nil }, from: ben)) {
+            XCTAssertEqual($0 as? DirectError, .malformed)
+        }
+        // A refused message leaves the ratchet exactly as it was, and the real message still opens.
+        var ratchet = ben.ratchet
+        var stripped = header
+        stripped.kemCiphertext = nil
+        stripped.kemKeyID = nil
+        XCTAssertThrowsError(try ratchet.decrypt(stripped.encoded + body))
+        XCTAssertEqual(ratchet, before.ratchet)
+        let (b2, message) = try Direct.open(envelope, from: ben)
+        ben = b2
+        XCTAssertEqual(message.text, "reply")
+    }
+
+    func testKeyExchangeRefusesKeysThatGiveAnAllZeroSecret() throws {
+        let mine = DirectKDF.newX25519()
+        // Zero and one are low-order points: the shared secret would be all zeros for any private key.
+        XCTAssertThrowsError(try DirectKDF.dh(mine.privateKey, Data(count: 32)))
+        XCTAssertThrowsError(try DirectKDF.dh(mine.privateKey, Data([1]) + Data(count: 31)))
+        // An ordinary key still works, and both sides agree.
+        let theirs = DirectKDF.newX25519()
+        XCTAssertEqual(try DirectKDF.dh(mine.privateKey, theirs.publicKey), try DirectKDF.dh(theirs.privateKey, mine.publicKey))
     }
 
     func testConversationBothWaysManyTurns() throws {

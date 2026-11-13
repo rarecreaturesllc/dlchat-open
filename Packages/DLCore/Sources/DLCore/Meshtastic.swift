@@ -58,6 +58,10 @@ public enum Meshtastic {
         case positionConfig(raw: Data, sharesLocation: Bool)
         /// A channel, raw. Only the primary (index 0) carries DLChat; `precision` 0 means it never shares a position.
         case channel(raw: Data, index: UInt64, precision: UInt64)
+        /// Config.device, Config.power and Config.bluetooth, raw, to send back with fields changed.
+        case deviceConfig(raw: Data)
+        case powerConfig(raw: Data)
+        case bluetoothConfig(raw: Data)
         case other
     }
 
@@ -90,6 +94,9 @@ public enum Meshtastic {
                     let fixed = (pf.lastVarint(3) ?? 0) != 0
                     return .positionConfig(raw: position, sharesLocation: gpsOn || fixed)
                 }
+                if let device = c.lastBytes(1) { return .deviceConfig(raw: device) }
+                if let power = c.lastBytes(3) { return .powerConfig(raw: power) }
+                if let bluetooth = c.lastBytes(7) { return .bluetoothConfig(raw: bluetooth) }
                 return .other
             case (10, .bytes(let channel)):
                 guard let ch = Reader.fields(channel) else { return nil }
@@ -159,10 +166,16 @@ public enum Meshtastic {
     /// AdminMessage { set_channel }: the channel unchanged except module_settings.position_precision = 0,
     /// which stops the radio sharing any position on it. Keeps the channel's key, name and role.
     public static func channelWithoutPosition(currentChannel raw: Data) -> Data? {
+        channel(positionPrecision: 0, currentChannel: raw)
+    }
+
+    /// AdminMessage { set_channel }: the channel unchanged except module_settings.position_precision
+    /// (ModuleSettings field 1: bits of latitude/longitude kept, 0 = none). Key, name and role are kept.
+    public static func channel(positionPrecision: UInt32, currentChannel raw: Data) -> Data? {
         guard let ch = Reader.fields(raw), let settingsRaw = ch.lastBytes(2), let st = Reader.fields(settingsRaw) else { return nil }
         let module = st.lastBytes(7)
         var moduleOut = Writer(keeping: module ?? Data(), without: [1])
-        moduleOut.varint(field: 1, 0)
+        moduleOut.varint(field: 1, UInt64(positionPrecision))
         var settings = Writer(keeping: settingsRaw, without: [7])
         settings.bytes(field: 7, moduleOut.data)
         var channel = Writer(keeping: raw, without: [2])

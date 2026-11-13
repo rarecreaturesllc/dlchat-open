@@ -41,16 +41,23 @@ public struct DirectRatchet: Codable, Equatable, Sendable {
 
     /// The side that scanned the invite (sends first): knows the inviter's ratchet key and KEM key.
     static func initiator(sharedSecret: Data, theirRatchet: Data, theirKEM: Data) throws -> DirectRatchet {
+        try initiatorWithSecret(sharedSecret: sharedSecret, theirRatchet: theirRatchet, theirKEM: theirKEM).ratchet
+    }
+
+    /// `initiator`, plus the ML-KEM secret behind its first chain, so the handshake can mix the same
+    /// post-quantum secret into the contact's own secret (the inviter gets it by decapsulating the first message).
+    static func initiatorWithSecret(sharedSecret: Data, theirRatchet: Data, theirKEM: Data) throws -> (ratchet: DirectRatchet, kemSecret: Data) {
         let kem = try PQ.generate()
         let mine = DirectKDF.newX25519()
         let encapsulated = try PQ.encapsulate(to: theirKEM)
         let dh = try DirectKDF.dh(mine.privateKey, theirRatchet)
         let (root, chain) = DirectKDF.root(sharedSecret, dh + encapsulated.secret)
-        return DirectRatchet(rootKey: root, sendPrivate: mine.privateKey, sendPublic: mine.publicKey, theirRatchet: theirRatchet,
-                             sendChain: chain, receiveChain: nil, chainCiphertext: encapsulated.ciphertext,
-                             chainCiphertextKeyID: PQ.keyID(theirKEM),
-                             kemKeys: [KEMKey(id: PQ.keyID(kem.publicKey), seed: kem.seed, publicKey: kem.publicKey)],
-                             theirKEM: theirKEM)
+        let ratchet = DirectRatchet(rootKey: root, sendPrivate: mine.privateKey, sendPublic: mine.publicKey, theirRatchet: theirRatchet,
+                                    sendChain: chain, receiveChain: nil, chainCiphertext: encapsulated.ciphertext,
+                                    chainCiphertextKeyID: PQ.keyID(theirKEM),
+                                    kemKeys: [KEMKey(id: PQ.keyID(kem.publicKey), seed: kem.seed, publicKey: kem.publicKey)],
+                                    theirKEM: theirKEM)
+        return (ratchet, encapsulated.secret)
     }
 
     /// The inviter: its invite keys are the first ratchet key pair and the first KEM key.
@@ -172,34 +179,31 @@ public struct DirectRatchet: Codable, Equatable, Sendable {
 
     /// A new ratchet key from the other side: close our receiving chain, open theirs, start our next
     /// sending chain with a fresh X25519 key and a fresh KEM encapsulation.
+    ///
+    /// Fails closed: a new chain with no ML-KEM ciphertext, or with no KEM key for our answer, is refused
+    /// rather than carried on with X25519 alone. DLChat always sends both, so only a stripped or forged
+    /// header gets here without them.
     private mutating func ratchetStep(_ header: Header) throws {
-        // Their KEM ciphertext (if any) was made to one of our KEM keys.
-        var theirSecret = Data()
-        if let ct = header.kemCiphertext, let id = header.kemKeyID {
-            guard let key = kemKeys.first(where: { $0.id == id }) else { throw DirectError.unknownKEMKey }
-            theirSecret = try PQ.decapsulate(seed: key.seed, ciphertext: ct)
+        // Their KEM ciphertext was made to one of our KEM keys.
+        guard let ct = header.kemCiphertext, let id = header.kemKeyID, let theirNewKEM = header.kemPublic else {
+            throw DirectError.malformed
         }
+        guard let key = kemKeys.first(where: { $0.id == id }) else { throw DirectError.unknownKEMKey }
+        let theirSecret = try PQ.decapsulate(seed: key.seed, ciphertext: ct)
         previousChainLength = sent
         sent = 0
         received = 0
         theirRatchet = header.ratchet
-        if let kem = header.kemPublic { theirKEM = kem }
+        theirKEM = theirNewKEM
         let (root1, receive) = DirectKDF.root(rootKey, try DirectKDF.dh(sendPrivate, header.ratchet) + theirSecret)
         receiveChain = receive
         let mine = DirectKDF.newX25519()
         sendPrivate = mine.privateKey
         sendPublic = mine.publicKey
-        var ourSecret = Data()
-        if let theirKEM {
-            let encapsulated = try PQ.encapsulate(to: theirKEM)
-            ourSecret = encapsulated.secret
-            chainCiphertext = encapsulated.ciphertext
-            chainCiphertextKeyID = PQ.keyID(theirKEM)
-        } else {
-            chainCiphertext = nil
-            chainCiphertextKeyID = nil
-        }
-        let (root2, send) = DirectKDF.root(root1, try DirectKDF.dh(sendPrivate, header.ratchet) + ourSecret)
+        let encapsulated = try PQ.encapsulate(to: theirNewKEM)
+        chainCiphertext = encapsulated.ciphertext
+        chainCiphertextKeyID = PQ.keyID(theirNewKEM)
+        let (root2, send) = DirectKDF.root(root1, try DirectKDF.dh(sendPrivate, header.ratchet) + encapsulated.secret)
         rootKey = root2
         sendChain = send
         // A new KEM key for the other side's next chain; keep a few older ones for crossed messages.

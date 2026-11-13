@@ -72,6 +72,8 @@ final class MeshtasticTextTests: XCTestCase {
         XCTAssertEqual(Meshtastic.routingError(p.payload), 35)
         XCTAssertTrue(Meshtastic.routingProblem(35).contains("key"))
         XCTAssertEqual(Meshtastic.routingError(Data()), 0)
+        XCTAssertTrue(Meshtastic.transmittedUnheard(5), "MAX_RETRANSMIT: sent, no repeat heard")
+        for code: UInt64 in [0, 1, 6, 7, 9, 33, 35] { XCTAssertFalse(Meshtastic.transmittedUnheard(code), "code \(code)") }
     }
 
     func testEncryptedOrOtherFramesAreNotPackets() {

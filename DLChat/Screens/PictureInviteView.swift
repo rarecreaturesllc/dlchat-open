@@ -8,7 +8,7 @@ struct PictureInviteSteps: View {
     let phrase: Phrase
     let name: String
 
-    @State private var wordCount = 5
+    @State private var wordCount = PictureInvite.defaultPasswordWords
     @State private var password = PictureInvite.makePassword()
     @State private var image: CGImage?
     @State private var file: URL?

@@ -97,7 +97,7 @@ final class HygieneAppDelegate: NSObject, UIApplicationDelegate {
     /// Demo screenshots for the App Store and the screenshot tests: off only in debug builds with `-seed-demo`.
     static var isOff: Bool {
         #if DEBUG
-        ProcessInfo.processInfo.arguments.contains("-seed-demo") && !ProcessInfo.processInfo.arguments.contains("-shield-screenshots")
+        LaunchSwitches.arguments.contains("-seed-demo") && !LaunchSwitches.arguments.contains("-shield-screenshots")
         #else
         false
         #endif

@@ -36,7 +36,7 @@ final class GroupListUITests: XCTestCase {
     /// going back to "Until DLChat closes" asks first, since it erases what was kept.
     func testMeshtasticHistoryIsOptInAndShowsActivity() throws {
         let app = launch()
-        app.openManageGroups()
+        app.openManage("drawer-manage-public")
         let history = app.buttons["mesh-history"]
         for _ in 0..<6 where !history.isHittable { app.swipeUp() }
         XCTAssertTrue(history.waitForExistence(timeout: 10))
@@ -104,7 +104,7 @@ final class GroupListUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Porch"].waitForExistence(timeout: 10))
     }
 
-    /// Create opens straight on the picture invite: the painted picture and a five-word password,
+    /// Create opens straight on the picture invite: the painted picture and a six-word password,
     /// ready to share, with no other tap first.
     func testCreateMakesAPictureInvite() throws {
         let app = XCUIApplication()
@@ -117,15 +117,15 @@ final class GroupListUITests: XCTestCase {
         add(shot)
         let password = app.descendants(matching: .any)["picture-password"].firstMatch
         XCTAssertTrue(password.exists)
-        XCTAssertEqual(password.label.split(separator: " ").count, 6, "\"Password:\" and five words")
+        XCTAssertEqual(password.label.split(separator: " ").count, 7, "\"Password:\" and six words, the default")
         // The throwaway password, so the screenshot above can be opened by DLCore's screenshot check.
         let words = XCTAttachment(string: password.label); words.name = "picture-password"; words.lifetime = .keepAlways
         add(words)
-        // Six words: a new password and a new picture.
-        let six = app.buttons["6 words"]
-        for _ in 0..<4 where !six.isHittable { app.swipeUp() }
-        six.tap()
-        expectation(for: NSPredicate(format: "label MATCHES %@", "Password:( [a-z]+){6}"), evaluatedWith: password)
+        // Five words: a new password and a new picture.
+        let five = app.buttons["5 words"]
+        for _ in 0..<4 where !five.isHittable { app.swipeUp() }
+        five.tap()
+        expectation(for: NSPredicate(format: "label MATCHES %@", "Password:( [a-z]+){5}"), evaluatedWith: password)
         waitForExpectations(timeout: 20)
         XCTAssertTrue(app.buttons["share-picture"].waitForExistence(timeout: 20))
     }
@@ -221,8 +221,11 @@ final class GroupListUITests: XCTestCase {
 
 extension XCUIApplication {
     /// Opens the group list the only way there is: the Chat tab's drawer, then Manage groups.
-    func openManageGroups(file: StaticString = #filePath, line: UInt = #line) {
-        let manage = buttons["drawer-manage-groups"]
+    func openManageGroups(file: StaticString = #filePath, line: UInt = #line) { openManage("drawer-manage-groups", file: file, line: line) }
+
+    /// Opens one section's Manage screen from the Chat drawer by the key's identifier.
+    func openManage(_ id: String, file: StaticString = #filePath, line: UInt = #line) {
+        let manage = buttons[id]
         XCTAssertTrue(buttons["Chat"].waitForExistence(timeout: 20), file: file, line: line)
         buttons["Chat"].tap()
         // A conversation already open on Chat: a second tap on the tab goes back to the drawer.

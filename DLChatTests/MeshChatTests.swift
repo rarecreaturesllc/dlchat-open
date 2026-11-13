@@ -42,6 +42,28 @@ final class MeshChatTests: XCTestCase {
         fake.onFrame?(out.data)
     }
 
+    func testIgnoredRadioIsDroppedMutedIsNotUnreadAndForgetStaysOnThePhone() {
+        let a = radio(0xA1), b = radio(0xB2), c = radio(0xC3)
+        a.1.air = [a.1, b.1, c.1]; b.1.air = a.1.air; c.1.air = a.1.air
+        for (mesh, _) in [a, b, c] { mesh.setOn(true); mesh.choose(mesh.radios[0]) }
+        defer { MeshPrefs.shared.setIgnored(false, node: 0xB2); MeshPrefs.shared.setMuted(false, node: 0xC3) }
+        MeshPrefs.shared.setIgnored(true, node: 0xB2)
+        MeshPrefs.shared.setMuted(true, node: 0xC3)
+        announce(0xB2, long: "Hilltop", short: "HILL", to: a.1)
+        XCTAssertTrue(a.0.directNodes.isEmpty, "ignored radios are not listed")
+        XCTAssertNil(b.0.sendText("hi", in: .direct(0xA1)))
+        XCTAssertNil(a.0.texts[.direct(0xB2)], "dropped on arrival")
+        XCTAssertNil(c.0.sendText("hey", in: .direct(0xA1)))
+        XCTAssertEqual(a.0.texts[.direct(0xC3)]?.count, 1)
+        XCTAssertNil(a.0.unread[.direct(0xC3)], "muted: kept but not unread")
+        let adminBefore = a.1.adminCount, writtenBefore = a.1.written.count
+        a.0.forget(0xC3)
+        XCTAssertNil(a.0.nodes[0xC3])
+        XCTAssertNil(a.0.texts[.direct(0xC3)])
+        XCTAssertEqual(a.1.adminCount, adminBefore)
+        XCTAssertEqual(a.1.written.count, writtenBefore, "nothing written to the radio")
+    }
+
     func testListsTheRadiosPublicChannel() {
         let (mesh, _) = radio(0xA1)
         mesh.setOn(true); mesh.choose(mesh.radios[0])
@@ -94,6 +116,27 @@ final class MeshChatTests: XCTestCase {
         ack(second, from: 0xA1, error: 35, to: fake)
         guard case .failed(let why) = mesh.texts[.direct(0xB2)]?.last?.state else { return XCTFail("should have failed") }
         XCTAssertTrue(why.contains("key"))
+    }
+
+    /// A channel message gets no receipt. When the radio gives up hearing another radio repeat it
+    /// (MAX_RETRANSMIT), it was still transmitted, so it must not read as "not sent".
+    func testChannelMessageWithNoRepeatHeardIsSentNotFailed() throws {
+        let (mesh, fake) = radio(0xA1)
+        mesh.setOn(true); mesh.choose(mesh.radios[0])
+        XCTAssertNil(mesh.sendText("anyone?", in: .channel(0)))
+        let id = try XCTUnwrap(mesh.texts[.channel(0)]?.last?.packetID)
+        ack(id, from: 0xA1, error: 5, to: fake)
+        XCTAssertEqual(mesh.texts[.channel(0)]?.last?.state, .unheard)
+        XCTAssertNil(mesh.sendText("again", in: .channel(0)))
+        let second = try XCTUnwrap(mesh.texts[.channel(0)]?.last?.packetID)
+        ack(second, from: 0xA1, to: fake)
+        XCTAssertEqual(mesh.texts[.channel(0)]?.last?.state, .relayed)
+        ack(second, from: 0xA1, error: 5, to: fake)
+        XCTAssertEqual(mesh.texts[.channel(0)]?.last?.state, .relayed, "a repeat already heard is not undone")
+        XCTAssertNil(mesh.sendText("too much", in: .channel(0)))
+        let third = try XCTUnwrap(mesh.texts[.channel(0)]?.last?.packetID)
+        ack(third, from: 0xA1, error: 9, to: fake)
+        guard case .failed = mesh.texts[.channel(0)]?.last?.state else { return XCTFail("airtime limit: never sent") }
     }
 
     func testRepeatsFromTheMeshShowOnce() {

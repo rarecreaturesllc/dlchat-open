@@ -29,6 +29,8 @@ struct RootView: View {
     @State private var invite: GroupInvite?
     @State private var inviteCheck: Result<PreparedGroup, JoinProblem>?
     @State private var picking = false
+    @State private var managingContacts = false
+    @State private var managingMesh = false
     @Environment(\.scenePhase) private var scenePhase
     /// DLChat went inactive only because the Face ID sheet came up (see the scene phase handler).
     @State private var faceIDSheetUp = false
@@ -62,7 +64,7 @@ struct RootView: View {
         #if DEBUG
         // The throwaway `-seed-demo` vault gets a known PIN (and starts unlocked), so UI tests and screenshots
         // skip the create-a-PIN screen. `-fresh-lock` leaves it out to test that screen.
-        let arguments = ProcessInfo.processInfo.arguments
+        let arguments = LaunchSwitches.arguments
         if arguments.contains("-seed-demo"), !arguments.contains("-fresh-lock"), !appLock.hasPIN {
             _ = appLock.setPIN(Self.demoPIN)
         }
@@ -166,12 +168,12 @@ struct RootView: View {
 
     /// Closes every screen and sheet at once, without animation (they may hold plaintext). Returns whether any was open.
     @discardableResult private func closeAll() -> Bool {
-        let open = reading || showingQR || playingTones || encryptingWords || settings || picking || creating || welcoming || addingContact
+        let open = reading || showingQR || playingTones || encryptingWords || settings || picking || managingContacts || managingMesh || creating || welcoming || addingContact
         var instant = Transaction()
         instant.disablesAnimations = true
         withTransaction(instant) {
             reading = false; showingQR = false; playingTones = false; encryptingWords = false
-            settings = false; picking = false; creating = false; welcoming = false; addingContact = false
+            settings = false; picking = false; managingContacts = false; managingMesh = false; creating = false; welcoming = false; addingContact = false
         }
         return open
     }
@@ -278,8 +280,8 @@ struct RootView: View {
 
     private var chatDrawer: some View {
         ChatDrawerView(groups: groups, direct: direct, mesh: mesh, open: openChat,
-                       newGroup: { creating = true }, manageGroups: { picking = true },
-                       addContact: { incomingContact = nil; addingContact = true })
+                       newGroup: { creating = true }, addContact: { incomingContact = nil; addingContact = true },
+                       manageGroups: { picking = true }, manageContacts: { managingContacts = true }, manageMesh: { managingMesh = true })
     }
 
     var body: some View {
@@ -350,13 +352,16 @@ struct RootView: View {
             }) { addingContact = false; incomingContact = nil }
         }
         .sheet(isPresented: $picking) {
-            GroupListView(groups: groups, mesh: mesh, openMesh: { conversation in
-                mesh.openConversation(conversation)
-                chatSelection = .mesh(conversation)
-                mode = 2
-                picking = false
-            }) { picking = false }
+            GroupListView(groups: groups, mesh: mesh) { picking = false }
         }
+        .sheet(isPresented: $managingContacts) {
+            InternetManageView(direct: direct, openChat: { id in
+                managingContacts = false
+                chatSelection = .direct(id)
+                mode = 2
+            }) { managingContacts = false }
+        }
+        .sheet(isPresented: $managingMesh) { MeshManageView(mesh: mesh) { managingMesh = false } }
         .sheet(isPresented: $welcoming) { FirstRunView(model: groups) { welcoming = false } }
         .sheet(isPresented: $creating, onDismiss: { invite = nil; inviteCheck = nil }) {
             GroupSetupView(model: groups, invite: invite, checked: inviteCheck) { creating = false }.id(invite)
@@ -413,13 +418,13 @@ struct RootView: View {
             defer { LaunchTiming.mark("root.task.end") }
             #if DEBUG
             // The drawer's folded sections are remembered between launches; a reset starts with them all open.
-            if ProcessInfo.processInfo.arguments.contains("-reset-demo") { RadioNotice.reset(); Onboarding.reset(); online.wipe(); mesh.wipe(); UserDefaults.standard.removeObject(forKey: "drawer.collapsed") }
+            if LaunchSwitches.arguments.contains("-reset-demo") { RadioNotice.reset(); Onboarding.reset(); online.wipe(); mesh.wipe(); UserDefaults.standard.removeObject(forKey: "drawer.collapsed") }
             // UI tests point online chat at a local address so they never post to real relays.
             if let relay = UserDefaults.standard.string(forKey: "online-relays") { online.setRelays([relay]) }
             // ...and can keep Tor off, so they never reach the Tor network either.
-            if ProcessInfo.processInfo.arguments.contains("-no-tor") { online.setTor(false) }
+            if LaunchSwitches.arguments.contains("-no-tor") { online.setTor(false) }
             // `-store-shots`: Chat opens on the conversation, past the ask-once card.
-            if ProcessInfo.processInfo.arguments.contains("-store-shots") { online.setEnabled(true) }
+            if LaunchSwitches.arguments.contains("-store-shots") { online.setEnabled(true) }
             // Internet Messages against a local relay (relay/README.md), without Tor.
             if let relay = UserDefaults.standard.string(forKey: "direct-relay") {
                 direct.allowWithoutTor = true

@@ -89,6 +89,13 @@ extension Meshtastic {
         Reader.fields(payload)?.lastVarint(3) ?? 0
     }
 
+    /// For a channel message: the radio did transmit it, retried, and never heard another radio repeat it
+    /// (MAX_RETRANSMIT, or TIMEOUT / NO_RESPONSE from older firmware). A channel message gets no receipt,
+    /// only that implicit one, so radios in range may well have it; it is not a send failure.
+    public static func transmittedUnheard(_ code: UInt64) -> Bool {
+        code == 3 || code == 5 || code == 8
+    }
+
     /// A plain-words reason for a Routing.Error code, for a message that did not get through.
     public static func routingProblem(_ code: UInt64) -> String {
         switch code {

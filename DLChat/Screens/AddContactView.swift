@@ -3,7 +3,7 @@ import SwiftUI
 import UIKit
 
 /// Adding an Internet Messages contact, as three plain steps: 1 share or open a one-time invite,
-/// 2 wait for the other phone, 3 read the six safety words to each other.
+/// 2 wait for the other phone, 3 read the safety words to each other.
 struct AddContactView: View {
     let direct: DirectModel
     /// An invite link opened from outside (Camera, Messages): starts on "Use their invite" with it.
@@ -250,7 +250,7 @@ struct AddContactView: View {
             .accessibilityIdentifier("contact-connected")
         step(accepted == nil ? 3 : 2, "Read the safety words to each other now")
         SafetyWordsPanel(words: contact.safetyWords)
-        Text("Ask: \"Can you read me your six safety words?\" If theirs match yours, you're talking to each other and nobody in between.")
+        Text("Ask: \"Can you read me your safety words?\" If theirs match yours, you're talking to each other and nobody in between.")
             .font(.dl(.footnote)).foregroundStyle(Color.dlSoft).fixedSize(horizontal: false, vertical: true)
         Button("Open chat") { openChat(contact.id) }
             .buttonStyle(.dlPrimary).accessibilityIdentifier("contact-open-chat")

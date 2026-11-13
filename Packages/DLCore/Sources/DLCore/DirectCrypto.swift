@@ -70,7 +70,11 @@ enum DirectKDF {
     static func dh(_ privateKey: Data, _ publicKey: Data) throws -> Data {
         let mine = try Curve25519.KeyAgreement.PrivateKey(rawRepresentation: privateKey)
         let theirs = try Curve25519.KeyAgreement.PublicKey(rawRepresentation: publicKey)
-        return try mine.sharedSecretFromKeyAgreement(with: theirs).withUnsafeBytes { Data($0) }
+        let secret = try mine.sharedSecretFromKeyAgreement(with: theirs).withUnsafeBytes { Data($0) }
+        // A handful of public keys (the low-order points) give an all-zero secret whatever our key is.
+        // Refuse them here rather than lean on the other inputs to the key derivation.
+        guard secret.contains(where: { $0 != 0 }) else { throw DirectError.malformed }
+        return secret
     }
 
     static func newX25519() -> (privateKey: Data, publicKey: Data) {

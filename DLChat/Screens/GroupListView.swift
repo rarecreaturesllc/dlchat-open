@@ -3,16 +3,12 @@ import SwiftUI
 import UIKit
 
 /// "Manage groups" in the Chat drawer: choose the active group, reorder, remove, and open a group's phrase
-/// and rooms. Create and join live here too, so this is the one place groups are managed. Below the groups, the
-/// Meshtastic section opens the radio's own channels and direct messages in Chat.
+/// and rooms. Create and join live here too, so this is the one place groups are managed. The Meshtastic
+/// radio has its own Manage screen (`MeshManageView`).
 struct GroupListView: View {
     let groups: GroupModel
     let mesh: MeshtasticModel
-    /// Shows a Meshtastic conversation in Chat and closes this screen.
-    let openMesh: (MeshConversation) -> Void
     let done: () -> Void
-    @State private var showingNodes = false
-    @State private var showingHistory = false
     @State private var creating = false
     @State private var removing: ChatGroup?
     @State private var removeFailed = false
@@ -53,9 +49,6 @@ struct GroupListView: View {
                     }
                     .listRowBackground(Color.dlNight).accessibilityIdentifier("add-group")
                 }
-                if !groups.groups.isEmpty {
-                    MeshSection(mesh: mesh, openChat: openMesh, showNodes: { showingNodes = true }, showHistory: { showingHistory = true })
-                }
             }
             .listStyle(.grouped).listRowSeparatorTint(Color.dlHairline).scrollContentBackground(.hidden)
             .background(Color.dlNight)
@@ -71,8 +64,6 @@ struct GroupListView: View {
             .navigationDestination(isPresented: Binding(get: { detailID != nil }, set: { if !$0 { detailID = nil } })) {
                 if let detailID { GroupDetailView(groups: groups, groupID: detailID) }
             }
-            .navigationDestination(isPresented: $showingNodes) { MeshNodeListView(mesh: mesh, openChat: openMesh) }
-            .navigationDestination(isPresented: $showingHistory) { MeshHistoryView(mesh: mesh) }
             .confirmationDialog(
                 "Remove \(removing?.name ?? "group")?",
                 isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),

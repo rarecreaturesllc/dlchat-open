@@ -145,6 +145,7 @@ struct MeshChatView: View {
         case .sending: parts.append("sending by radio")
         case .relayed: parts.append(conversation.isDirect ? "passed on by the mesh" : "repeated by another radio")
         case .delivered: parts.append("delivered")
+        case .unheard: parts.append("sent · no radio heard repeating it")
         case .failed(let why): parts.append("not sent: \(why)")
         }
         return parts.joined(separator: " · ")
