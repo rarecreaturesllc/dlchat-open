@@ -15,7 +15,7 @@ final class MeshChatTests: XCTestCase {
         fake.licensed = licensed
         let d = UserDefaults(suiteName: suite)!
         d.set(true, forKey: MeshtasticModel.lawAcceptedKey)
-        let mesh = MeshtasticModel(defaults: d, country: { "US" }) { fake }
+        let mesh = MeshtasticModel(defaults: d) { fake }
         return (mesh, fake)
     }
 

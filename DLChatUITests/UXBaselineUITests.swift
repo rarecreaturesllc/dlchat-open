@@ -136,6 +136,9 @@ final class UXBaselineUITests: XCTestCase {
         // Wait for the fling to stop: an audit taken mid-scroll samples pixels from a different offset than the frames.
         let title = app.staticTexts["Settings"]
         for _ in 0..<3 { settings.swipeUp(); waitUntilStill(title); try audit(app, clippedBy: settings) }
+        // Scrolled to the bottom, Done and the title are still in view: the header is pinned.
+        XCTAssertTrue(app.buttons["settings-done"].isHittable, "Done stays reachable at the bottom of Settings")
+        XCTAssertTrue(title.isHittable)
         app.buttons["Done"].tap()
     }
 

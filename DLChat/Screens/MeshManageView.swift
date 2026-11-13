@@ -18,6 +18,28 @@ struct MeshManageView: View {
     var body: some View {
         NavigationStack {
             List {
+                if mesh.status == .ready, !mesh.privacyNoteSeen {
+                    Section { RadioPrivacyNote(mesh: mesh).listRowBackground(Color.dlNight).listRowInsets(EdgeInsets()) }
+                }
+                Section {
+                    NavigationLink { MeshRadioSettingsView(mesh: mesh) } label: {
+                        HStack(spacing: DLSpace.sm) {
+                            Image(systemName: "slider.horizontal.3").font(.dl(.title3)).foregroundStyle(Color.dlSoft).frame(width: 28)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Radio settings").font(.dl(.headline)).foregroundStyle(Color.dlText)
+                                Text("Power, hops, name, role, location and more").font(.dl(.footnote)).foregroundStyle(Color.dlSoft)
+                            }
+                        }
+                        .frame(minHeight: DLSize.control)
+                    }
+                    .disabled(!mesh.canChangeSettings)
+                    .listRowBackground(Color.dlNight).accessibilityIdentifier("mesh-settings")
+                } footer: {
+                    footer(mesh.canChangeSettings
+                           ? "Written to your radio, which restarts for a moment. Shown as usable only for a radio you confirmed is yours."
+                           : mesh.settingsBlocker ?? "")
+                }
+
                 Section {
                     Text(MeshStatus.text(mesh)).font(.dl(.subheadline)).foregroundStyle(Color.dlText)
                         .listRowBackground(Color.dlNight).accessibilityIdentifier("mesh-manage-status")
@@ -41,25 +63,6 @@ struct MeshManageView: View {
                     ForEach(radios) { node in nodeRow(node) }
                 } header: { header("Radios heard") } footer: {
                     footer("Mute stops badges. Ignore hides a radio and drops its messages. Forget clears it and its chat from this phone; it comes back when your radio next announces it. The radio's own node list is not changed.")
-                }
-
-                Section {
-                    NavigationLink { MeshRadioSettingsView(mesh: mesh) } label: {
-                        HStack(spacing: DLSpace.sm) {
-                            Image(systemName: "slider.horizontal.3").font(.dl(.title3)).foregroundStyle(Color.dlSoft).frame(width: 28)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Radio settings").font(.dl(.headline)).foregroundStyle(Color.dlText)
-                                Text("Power, hops, name, role, location and more").font(.dl(.footnote)).foregroundStyle(Color.dlSoft)
-                            }
-                        }
-                        .frame(minHeight: DLSize.control)
-                    }
-                    .disabled(!mesh.canChangeSettings)
-                    .listRowBackground(Color.dlNight).accessibilityIdentifier("mesh-settings")
-                } footer: {
-                    footer(mesh.canChangeSettings
-                           ? "Written to your radio, which restarts for a moment. Shown as usable only for a radio you confirmed is yours."
-                           : mesh.settingsBlocker ?? "")
                 }
 
                 Section {

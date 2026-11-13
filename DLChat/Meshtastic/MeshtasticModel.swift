@@ -7,9 +7,8 @@ import Observation
 /// channel, and anything the radio hears that opens with one of this phone's groups is stored like
 /// any other message. Never sends while the radio is in licensed mode, where encryption is not allowed.
 ///
-/// Setup on pairing, so the Meshtastic app is not needed: a radio with no region gets one from the phone's
-/// country, after the person confirms (a wrong region is illegal to transmit on); location sharing is turned
-/// off on its own (GPS off, no fixed position, primary channel shares no position).
+/// Connecting only reads: DLChat writes nothing to the radio on connect or auto-connect. Settings change only
+/// when the person taps them (`MeshtasticSettings`), and only on a radio they confirmed is theirs.
 @MainActor
 @Observable
 final class MeshtasticModel {
@@ -23,8 +22,8 @@ final class MeshtasticModel {
 
     private(set) var isOn: Bool
     private(set) var status: Status = .off
-    /// The Bluetooth side is running. False while the radio is on by default but still waiting for a first
-    /// group (or a tap in Settings), so Settings can show the switch as it really is.
+    /// The Bluetooth side is running. False while the radio is on but still waiting for a first
+    /// group, so Settings can show the switch as it really is.
     private(set) var isRunning = false
     /// What Settings and the radio screens show as "on": switched on and actually running.
     var isActive: Bool { isOn && isRunning }
@@ -36,8 +35,8 @@ final class MeshtasticModel {
     private(set) var problem: String?
     /// The radio said it has no LoRa region, so it cannot transmit yet. False until its settings arrive.
     private(set) var regionUnset = false
-    /// What DLChat did about the radio's location sharing, to show in Settings.
-    private(set) var locationNote: String?
+    /// The one-time note about location, GPS and region privacy was shown and dismissed.
+    private(set) var privacyNoteSeen: Bool
     /// A setting change was sent and the radio is applying it (it may restart).
     private(set) var applying = false
     /// Other radios this radio has heard, for the Mesh Map. Memory only; cleared on forget and wipe.
@@ -86,16 +85,13 @@ final class MeshtasticModel {
     // The radio's own settings, raw, as it last sent them; observed so the settings screen shows what the radio says.
     private var loraRaw: Data?
     private var positionRaw: Data?
-    @ObservationIgnored private var positionShares = false
+    private var positionShares = false
     private var primaryChannel: (raw: Data, precision: UInt64)?
     private var deviceRaw: Data?
     private var powerRaw: Data?
     private var bluetoothRaw: Data?
     /// The radio's own User (from its node_info), to change its names with everything else kept.
     private var ownerRaw: Data?
-    /// Location fix tried once per connection run, so a radio that refuses it is reported, not looped on.
-    @ObservationIgnored private var locationTried = false
-    @ObservationIgnored private let country: () -> String?
     /// How long to listen before picking a radio, so the nearest of several can be heard first.
     @ObservationIgnored private let pickDelay: Duration
     @ObservationIgnored private var pickTask: Task<Void, Never>?
@@ -121,9 +117,7 @@ final class MeshtasticModel {
     /// The person accepted the radio rules notice ("I know the radio laws and I am responsible").
     /// The radio never starts without it, including for anyone who had it on from an older build.
     static let lawAcceptedKey = "mesh.lawAccepted"
-    /// The person turned location sharing on for their radio: DLChat stops turning it off on each connection.
-    /// Cleared when the radio is forgotten or replaced, and on wipe.
-    static let shareLocationKey = "mesh.shareLocation"
+    static let privacyNoteKey = "mesh.privacyNoteSeen"
 
     /// Whether the person has accepted responsibility for following the radio laws where they are.
     var lawAccepted: Bool { defaults.bool(forKey: Self.lawAcceptedKey) }
@@ -134,26 +128,30 @@ final class MeshtasticModel {
     static let unconfirmedKey = "mesh.radio.unconfirmed"
 
     /// The saved radio is the person's own: chosen by hand, or confirmed after DLChat picked it.
-    /// Until then DLChat changes nothing on it (location, region): it may be a stranger's radio
-    /// with a fixed or no PIN.
+    /// Until then DLChat offers no settings for it: it may be a stranger's radio with a fixed or no PIN.
     var isMine: Bool {
         guard let saved = savedRadio else { return false }
         return defaults.string(forKey: Self.unconfirmedKey) != saved.uuidString
     }
 
-    /// "This is my radio": DLChat may now turn off its location sharing and offer to set its region.
+    /// "This is my radio": the Radio settings controls unlock. Nothing is written by this.
     func confirmMine() {
         defaults.removeObject(forKey: Self.unconfirmedKey)
         mineVersion += 1
-        if status == .ready { turnOffLocationIfNeeded() }
     }
 
-    init(defaults: UserDefaults = .standard, country: @escaping () -> String? = { Locale.current.region?.identifier },
+    /// The one-time privacy note was read.
+    func dismissPrivacyNote() {
+        privacyNoteSeen = true
+        defaults.set(true, forKey: Self.privacyNoteKey)
+    }
+
+    init(defaults: UserDefaults = .standard,
          pickDelay: Duration = .seconds(3), pickTimeout: Duration = .seconds(90), saveDelay: Duration = .seconds(5),
          makeLink: (() -> RadioLink)? = nil) {
         self.defaults = defaults
         self.saveDelay = saveDelay
-        self.country = country
+        privacyNoteSeen = defaults.bool(forKey: Self.privacyNoteKey)
         self.pickDelay = pickDelay
         self.pickTimeout = pickTimeout
         self.makeLink = makeLink ?? { MeshtasticLink() }
@@ -168,17 +166,6 @@ final class MeshtasticModel {
 
     var savedRadio: UUID? { defaults.string(forKey: Self.radioKey).flatMap(UUID.init(uuidString:)) }
     var isReady: Bool { status == .ready && !licensed && !regionUnset }
-
-    /// The region DLChat would set from the phone's country, or nil when it will not guess.
-    var suggestedRegion: (code: UInt64, name: String)? { country().flatMap(Meshtastic.region(forCountry:)) }
-
-    /// Sets the suggested region on a radio that has none. The radio restarts to apply it.
-    func setSuggestedRegion() {
-        guard isMine, regionUnset, let node = myNode, let raw = loraRaw, let region = suggestedRegion else { return }
-        applying = true
-        link?.write(Meshtastic.adminPacket(Meshtastic.setRegion(region.code, currentLoRa: raw), to: node, id: Self.packetID()))
-        askForConfig()
-    }
 
     /// Starts the radio if it is on and not running yet. RootView calls it once a group exists.
     func startIfWanted() { if isOn { start() } }
@@ -246,7 +233,6 @@ final class MeshtasticModel {
         pickWatch?.cancel(); pickWatch = nil
         if let current = savedRadio, current != radio.id {
             link?.disconnect(); resetSettings(); myNode = nil; licensed = false
-            defaults.removeObject(forKey: Self.shareLocationKey)
         }
         autoPicked = picked ? radio.id : nil
         if picked {
@@ -304,7 +290,6 @@ final class MeshtasticModel {
         autoPicked = nil
         defaults.removeObject(forKey: Self.radioKey)
         defaults.removeObject(forKey: Self.unconfirmedKey)
-        defaults.removeObject(forKey: Self.shareLocationKey)
         link?.disconnect()
         radioName = nil
         licensed = false
@@ -325,7 +310,7 @@ final class MeshtasticModel {
     func send(_ wire: Data) -> Bool {
         guard isOn, status == .ready else { return false }
         guard !licensed else { problem = "The radio is in licensed mode, where encrypted messages are not allowed. Nothing was sent by radio."; return false }
-        guard !regionUnset else { problem = "Set the radio's region in Settings first. Nothing was sent by radio."; return false }
+        guard !regionUnset else { problem = "Set the radio's region in the Meshtastic app first. Nothing was sent by radio."; return false }
         guard wire.count <= Meshtastic.maxPayload else { problem = "Too long for the radio. Shorten the message to send it by radio."; return false }
         guard let packet = try? Meshtastic.broadcastPacket(payload: wire, id: Self.packetID(),
                                                            hops: Meshtastic.hopLimit(currentLoRa: loraRaw)) else { return false }
@@ -401,30 +386,7 @@ final class MeshtasticModel {
         ownerRaw = nil
         channels = []
         presetName = nil
-        locationTried = false
-        locationNote = nil
         applying = false
-    }
-
-    /// GPS off, no fixed position, and no position on the primary channel, in one saved batch.
-    private func turnOffLocationIfNeeded() {
-        guard !defaults.bool(forKey: Self.shareLocationKey) else { locationNote = nil; return }
-        let channelShares = (primaryChannel?.precision ?? 0) != 0
-        guard positionShares || channelShares else {
-            if locationTried { locationNote = "Location sharing turned off on this radio." }
-            return
-        }
-        guard !locationTried else {
-            locationNote = "DLChat could not turn off location sharing on this radio. Turn it off in the Meshtastic app before using it."
-            return
-        }
-        guard let node = myNode else { return }
-        locationTried = true
-        locationNote = "Turning off location sharing on this radio…"
-        var changes: [Data] = []
-        if positionShares, let raw = positionRaw { changes.append(Meshtastic.locationOff(currentPosition: raw)) }
-        if channelShares, let raw = primaryChannel?.raw, let admin = Meshtastic.channelWithoutPosition(currentChannel: raw) { changes.append(admin) }
-        apply(changes, to: node)
     }
 
     /// Sends setting changes as one saved batch (at most one restart), then reads the settings back to confirm;
@@ -472,8 +434,6 @@ final class MeshtasticModel {
             pickWatch?.cancel(); pickWatch = nil
             autoPicked = nil
             applying = false
-            // Not confirmed as theirs: change nothing on a radio that may belong to someone else.
-            if isMine { turnOffLocationIfNeeded() }
         case .rebooted:
             guard status != .released else { break }
             status = .connecting
@@ -524,7 +484,7 @@ final class MeshtasticModel {
         defaults.removeObject(forKey: Self.unconfirmedKey)
         defaults.set(false, forKey: Self.onKey)  // a wipe leaves the radio off, like online chat
         defaults.removeObject(forKey: Self.lawAcceptedKey)  // and asks for the radio rules again
-        defaults.removeObject(forKey: Self.shareLocationKey)
+        defaults.removeObject(forKey: Self.privacyNoteKey); privacyNoteSeen = false
         MeshPrefs.shared.wipe()
         isOn = false
         radioName = nil
@@ -545,7 +505,7 @@ final class MeshtasticModel {
 /// Settings the person can change on their own radio. Each needs the radio connected and marked "This is my radio"
 /// (`isMine`); each reads the radio's current section and changes only its own fields (DLCore `MeshtasticSettings`),
 /// sent as one saved batch. Each returns false, sending nothing, when it cannot apply. DLChat never writes the
-/// region (except `setSuggestedRegion`), frequency, duty cycle or any channel key.
+/// region, frequency, duty cycle or any channel key.
 extension MeshtasticModel {
     /// Not while a change is going out: a second write would be built from the old settings and undo the first.
     var canChangeSettings: Bool { settingsBlocker == nil }
@@ -574,8 +534,8 @@ extension MeshtasticModel {
     /// Whether the radio asks for a fixed PIN. The PIN itself is never shown.
     var usesFixedPIN: Bool? { bluetoothRaw.map { Meshtastic.usesFixedPIN(currentBluetooth: $0) } }
     var shortName: String? { ownerRaw.flatMap(Meshtastic.Reader.fields)?.string(3) }
-    /// The person chose to share location; DLChat no longer turns it off on connection.
-    var sharesLocation: Bool { defaults.bool(forKey: Self.shareLocationKey) }
+    /// What the radio says now: it broadcasts its position, or its primary channel carries one.
+    var sharesLocation: Bool { positionShares || (primaryChannel?.precision ?? 0) != 0 }
     var positionPrecision: UInt32? { primaryChannel.map { UInt32(clamping: $0.precision) } }
     var positionIntervalSecs: UInt32? { positionRaw.flatMap(Meshtastic.Reader.fields)?.lastVarint(1).map { UInt32(clamping: $0) } }
 
@@ -624,7 +584,7 @@ extension MeshtasticModel {
         sendSetting(loraRaw.flatMap { Meshtastic.setMQTT(okToMQTT: okToMQTT, ignoreMQTT: ignoreMQTT, currentLoRa: $0) })
     }
 
-    /// Off: GPS off, no fixed position, primary channel shares no position (DLChat's default). On: GPS on,
+    /// Off: GPS off, no fixed position, primary channel shares no position. On: GPS on,
     /// broadcast every `intervalSecs` (`Meshtastic.positionIntervals`), primary channel at `precision` bits
     /// (`Meshtastic.isValidPrecision`; the firmware caps a default-key channel at 15).
     @discardableResult func setLocationSharing(_ on: Bool, precision: UInt32 = 13, intervalSecs: UInt32 = 900) -> Bool {
@@ -639,9 +599,6 @@ extension MeshtasticModel {
         }
         let ready = changes.compactMap { $0 }
         guard ready.count == changes.count else { return false }
-        if on { defaults.set(true, forKey: Self.shareLocationKey) } else { defaults.removeObject(forKey: Self.shareLocationKey) }
-        locationTried = !on
-        locationNote = nil
         apply(ready, to: node)
         return true
     }
@@ -703,7 +660,7 @@ extension MeshtasticModel {
         guard !body.isEmpty else { return nil }
         guard isOn else { return "The radio is off. Turn it on in Settings > Meshtastic radio." }
         guard status == .ready, let me = myNode else { return "The radio is not connected yet. Nothing was sent." }
-        guard !regionUnset else { return "Set the radio's region in Settings first. Nothing was sent." }
+        guard !regionUnset else { return "Set the radio's region in the Meshtastic app first. Nothing was sent." }
         let bytes = body.utf8.count
         guard bytes <= Meshtastic.maxTextBytes else {
             return "Too long for Meshtastic: \(bytes) of \(Meshtastic.maxTextBytes) bytes. Shorten it to send."

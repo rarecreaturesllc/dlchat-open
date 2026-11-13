@@ -126,3 +126,21 @@ struct MeshRadioSettingsView: View {
         Text(text).font(.dl(.subheadline)).foregroundStyle(Color.dlSoft).listRowBackground(Color.dlNight)
     }
 }
+
+/// Shown once after the first connect: DLChat reads the radio but never changes it by itself.
+struct RadioPrivacyNote: View {
+    let mesh: MeshtasticModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DLSpace.xs) {
+            Text("Check your radio's privacy settings").font(.dl(.headline)).foregroundStyle(Color.dlText)
+            Text("DLChat does not change your radio by itself. Radios often share their GPS position by default, so check location, GPS and region in the Meshtastic app. Anything you change from DLChat is a button you tap.")
+                .font(.dl(.footnote)).foregroundStyle(Color.dlSoft).fixedSize(horizontal: false, vertical: true)
+            Button("Got it") { Haptics.tap(); mesh.dismissPrivacyNote() }.buttonStyle(.dlSecondary)
+                .accessibilityIdentifier("mesh-privacy-note-dismiss")
+        }
+        .padding(DLSpace.md).frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.dlPanel, in: RoundedRectangle.key)
+        .accessibilityIdentifier("mesh-privacy-note")
+    }
+}

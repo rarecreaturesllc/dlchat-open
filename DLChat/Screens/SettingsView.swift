@@ -36,16 +36,19 @@ struct SettingsView: View {
     var body: some View {
         ZStack {
             Color.dlNight.ignoresSafeArea()
+            VStack(spacing: 0) {
+            // Pinned above the scroll view, so Done stays in reach however far down the page is.
+            HStack {
+                Text("Settings").font(.dl(.title2, .semibold)).foregroundStyle(Color.dlText)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                Button("Done") { Haptics.tap(); done() }.font(.dl(.headline)).foregroundStyle(Color.dlText)
+                    .frame(minWidth: DLSize.control, minHeight: DLSize.control)
+                    .accessibilityIdentifier("settings-done")
+            }
+            .padding(.horizontal, DLSpace.md).padding(.top, DLSpace.md).padding(.bottom, DLSpace.xs)
             ScrollView {
                 VStack(alignment: .leading, spacing: DLSpace.md) {
-                    HStack {
-                        Text("Settings").font(.dl(.title2, .semibold)).foregroundStyle(Color.dlText)
-                            .accessibilityAddTraits(.isHeader)
-                        Spacer()
-                        Button("Done") { Haptics.tap(); done() }.font(.dl(.headline)).foregroundStyle(Color.dlText)
-                            .frame(minWidth: DLSize.control, minHeight: DLSize.control)
-                    }
-
                     heading("Safety")
                     SafetySection(lock: lock, compose: compose, wipe: wipe, close: done)
 
@@ -67,6 +70,7 @@ struct SettingsView: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .accessibilityIdentifier("settings-scroll")
+            }
         }
         .preferredColorScheme(.dark)
         .tint(Color.dlGo)
@@ -229,7 +233,7 @@ struct SettingsView: View {
                 }
                 let _ = mesh.mineVersion  // isMine lives in UserDefaults; this redraws when it changes
                 if !mesh.isMine {
-                    note("DLChat connected to the nearest radio on its own. Radios without a screen often use the same PIN, so it could be someone else's. Until you confirm it's yours, DLChat changes nothing on it: it does not turn off its location sharing or set its region.")
+                    note("DLChat connected to the nearest radio on its own. Radios without a screen often use the same PIN, so it could be someone else's. DLChat changes nothing on a radio by itself. Confirm it's yours to unlock its Radio settings here.")
                     Button("This is my radio") { mesh.confirmMine() }
                         .buttonStyle(.dlPrimary).accessibilityIdentifier("settings-radio-mine")
                 }
@@ -237,20 +241,10 @@ struct SettingsView: View {
                 ForEach(others) { radio in
                     Button("Use \(radio.name) instead") { mesh.choose(radio) }.buttonStyle(.dlSecondary)
                 }
-                if mesh.isMine, mesh.regionUnset, mesh.status == .ready, !mesh.applying {
-                    if let region = mesh.suggestedRegion {
-                        note("This radio has no region yet, so it cannot send. Set it to \(region.name), from your phone's country? Only pick a region where you are: radio frequencies are set by law.")
-                        Button("Set region: \(region.name)") { mesh.setSuggestedRegion() }
-                            .buttonStyle(.dlPrimary).accessibilityIdentifier("settings-radio-region")
-                    } else {
-                        note("This radio has no region yet, so it cannot send. DLChat does not know the right one for your country: set it once in the Meshtastic app.")
-                    }
+                if mesh.regionUnset, mesh.status == .ready {
+                    note("This radio has no region yet, so it cannot send. DLChat never sets a region: set it once in the Meshtastic app, where you pick the one for your country.")
                 }
-                if let location = mesh.locationNote {
-                    Text(location).font(.dl(.footnote))
-                        .foregroundStyle(location.contains("could not") ? Color.dlWarn : Color.dlSoft)
-                        .accessibilityIdentifier("settings-radio-location")
-                }
+                if mesh.status == .ready, !mesh.privacyNoteSeen { RadioPrivacyNote(mesh: mesh) }
                 // Transmit power, hops, name and the rest: also reached from Chat > Manage Meshtastic.
                 if mesh.isMine, mesh.status == .ready {
                     Button("Radio settings") { showingRadioSettings = true }.buttonStyle(.dlSecondary)
@@ -268,7 +262,7 @@ struct SettingsView: View {
             note(mesh.letsGoInBackground
                  ? "A radio talks to one app at a time. DLChat lets go when you switch away, so the Meshtastic app can use it, and takes it back when you return. Radio messages cannot notify you while DLChat is closed."
                  : "DLChat stays connected while in the background, so radio messages can notify you while the phone is locked. Tap Let go of radio before using the Meshtastic app.")
-            note("Once a radio is yours (chosen by hand, or confirmed), DLChat turns off its GPS and location sharing, and asks before setting a region. DLChat never sends through a radio in licensed mode, where encryption is not allowed.")
+            note("DLChat only reads from your radio when it connects and never changes it by itself. The Radio settings buttons change it only when you tap them. DLChat never sends through a radio in licensed mode, where encryption is not allowed.")
         }
     }
 

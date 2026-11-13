@@ -120,7 +120,7 @@ final class MeshtasticModelTests: XCTestCase {
 
     private struct Phone { let groups: GroupModel; let online: OnlineModel; let mesh: MeshtasticModel; let radio: FakeRadio; let defaults: UserDefaults }
 
-    private func phone(_ phrase: Phrase, node: UInt32, licensed: Bool = false, country: String? = "US",
+    private func phone(_ phrase: Phrase, node: UInt32, licensed: Bool = false,
                        setUp: (FakeRadio) -> Void = { _ in }) throws -> Phone {
         let dir = FileManager.default.temporaryDirectory.appending(path: "dlchat-mesh-\(UUID().uuidString)", directoryHint: .isDirectory)
         let vault = Vault(service: "app.dlchat.tests.\(UUID().uuidString)", directory: dir)
@@ -133,7 +133,7 @@ final class MeshtasticModelTests: XCTestCase {
         let radio = FakeRadio(node: node)
         radio.licensed = licensed
         setUp(radio)
-        let mesh = MeshtasticModel(defaults: d, country: { country }) { radio }
+        let mesh = MeshtasticModel(defaults: d) { radio }
         mesh.onWire = { online.store(wire: $0) }
         return Phone(groups: groups, online: online, mesh: mesh, radio: radio, defaults: d)
     }
@@ -294,7 +294,7 @@ final class MeshtasticModelTests: XCTestCase {
         XCTAssertNil(mesh.autoPicked, "connected, so no longer on trial")
     }
 
-    /// Picked on its own, the radio may be a stranger's (fixed or no PIN): nothing on it changes until confirmed.
+    /// Picked on its own, the radio may be a stranger's (fixed or no PIN): nothing on it changes, before or after confirming.
     func testChangesNothingOnAPickedRadioUntilConfirmed() async throws {
         let radio = FakeRadio(node: 0xA1)
         radio.gpsOn = true
@@ -307,7 +307,8 @@ final class MeshtasticModelTests: XCTestCase {
         XCTAssertTrue(radio.gpsOn)
         mesh.confirmMine()
         XCTAssertTrue(mesh.isMine)
-        XCTAssertFalse(radio.gpsOn, "confirmed: location sharing turned off")
+        XCTAssertTrue(radio.gpsOn, "confirming only unlocks the Radio settings buttons; nothing is turned off by itself")
+        XCTAssertEqual(radio.adminCount, 0)
     }
 
     /// A radio picked on its own that never finishes connecting is dropped, and can still be chosen by hand.
@@ -374,55 +375,54 @@ final class MeshtasticModelTests: XCTestCase {
         XCTAssertEqual(p.groups.chatMessages(groupID: p.groups.groups[0].id).first?.via, "radio", "not 'waiting for a connection'")
     }
 
-    func testNewRadioWaitsForTheRegionThenGetsItAfterConfirming() throws {
+    func testNewRadioWithNoRegionIsReportedAndNeverChanged() throws {
         let p = try phone(try Phrase.generate(words: 10), node: 0xA1) { $0.region = 0 }
         p.mesh.setOn(true); p.mesh.choose(p.mesh.radios[0])
         XCTAssertTrue(p.mesh.regionUnset)
         XCTAssertFalse(p.mesh.isReady, "a radio with no region cannot transmit")
         XCTAssertFalse(p.mesh.send(try wire("hello", p)))
-        XCTAssertEqual(p.radio.region, 0, "nothing changes until the person confirms")
-        XCTAssertEqual(p.mesh.suggestedRegion?.code, 1)
-        p.mesh.setSuggestedRegion()
-        XCTAssertEqual(p.radio.region, 1)
-        XCTAssertFalse(p.mesh.regionUnset)
-        XCTAssertTrue(p.mesh.isReady)
+        p.mesh.confirmMine()
+        XCTAssertEqual(p.radio.region, 0, "DLChat never sets a region, not even for a confirmed radio")
+        XCTAssertEqual(p.radio.adminCount, 0)
     }
 
-    func testRegionIsNeverGuessedForAnUnknownCountryOrChanged() throws {
-        let unknown = try phone(try Phrase.generate(words: 10), node: 0xA1, country: "BR") { $0.region = 0 }
-        unknown.mesh.setOn(true); unknown.mesh.choose(unknown.mesh.radios[0])
-        XCTAssertNil(unknown.mesh.suggestedRegion)
-        unknown.mesh.setSuggestedRegion()
-        XCTAssertEqual(unknown.radio.region, 0)
-        // A radio that already has a region keeps it.
+    func testRadioWithARegionKeepsItAndNothingIsWrittenOnConnect() throws {
         let set = try phone(try Phrase.generate(words: 10), node: 0xB2) { $0.region = 3 }
         set.mesh.setOn(true); set.mesh.choose(set.mesh.radios[0])
         XCTAssertFalse(set.mesh.regionUnset)
-        set.mesh.setSuggestedRegion()
         XCTAssertEqual(set.radio.region, 3)
+        XCTAssertEqual(set.radio.adminCount, 0)
     }
 
-    func testLocationSharingIsTurnedOffOnPairing() throws {
+    /// The owner's rule for 1.1 (31): connecting, auto-connecting and confirming "This is my radio" only read.
+    func testLocationSharingIsLeftAloneOnConnectAndOnConfirming() throws {
         let p = try phone(try Phrase.generate(words: 10), node: 0xA1) { $0.gpsOn = true; $0.precision = 13 }
         p.mesh.setOn(true); p.mesh.choose(p.mesh.radios[0])
-        XCTAssertFalse(p.radio.gpsOn)
-        XCTAssertEqual(p.radio.precision, 0)
-        XCTAssertEqual(p.mesh.locationNote, "Location sharing turned off on this radio.")
+        XCTAssertTrue(p.radio.gpsOn)
+        XCTAssertEqual(p.radio.precision, 13)
+        XCTAssertEqual(p.radio.adminCount, 0, "nothing written on connect")
+        XCTAssertTrue(p.mesh.sharesLocation, "shown as the radio says it is")
+        p.mesh.confirmMine()
+        XCTAssertTrue(p.radio.gpsOn)
+        XCTAssertEqual(p.radio.adminCount, 0, "nothing written by confirming either")
         XCTAssertTrue(p.mesh.isReady)
-    }
-
-    func testRadioThatKeepsSharingIsReportedNotRetriedForever() throws {
-        let p = try phone(try Phrase.generate(words: 10), node: 0xA1) { $0.gpsOn = true; $0.ignoresAdmin = true }
-        p.mesh.setOn(true); p.mesh.choose(p.mesh.radios[0])
-        XCTAssertEqual(p.radio.adminCount, 3, "one batch: begin, position, commit")
-        XCTAssertTrue(p.mesh.locationNote?.contains("could not turn off") ?? false)
+        p.mesh.letGo(); p.mesh.useHere()  // a reconnect also only reads
+        XCTAssertEqual(p.radio.adminCount, 0)
+        XCTAssertTrue(p.radio.gpsOn)
     }
 
     func testNoSettingsChangeForARadioAlreadyPrivate() throws {
         let p = try phone(try Phrase.generate(words: 10), node: 0xA1) { $0.region = 1 }
         p.mesh.setOn(true); p.mesh.choose(p.mesh.radios[0])
         XCTAssertEqual(p.radio.adminCount, 0)
-        XCTAssertNil(p.mesh.locationNote)
+    }
+
+    func testPrivacyNoteIsShownOnceUntilDismissed() throws {
+        let p = try phone(try Phrase.generate(words: 10), node: 0xA1) { $0.region = 1 }
+        XCTAssertFalse(p.mesh.privacyNoteSeen)
+        p.mesh.dismissPrivacyNote()
+        XCTAssertTrue(p.mesh.privacyNoteSeen)
+        XCTAssertTrue(MeshtasticModel(defaults: p.defaults) { p.radio }.privacyNoteSeen, "remembered")
     }
 
     /// The LoRa section of the last set_config this phone sent to its radio.
@@ -452,7 +452,7 @@ final class MeshtasticModelTests: XCTestCase {
 
     func testRadioSettingsWaitForThisIsMyRadio() async throws {
         let p = try phone(try Phrase.generate(words: 10), node: 0xA1) { $0.region = 1 }
-        let mesh = MeshtasticModel(defaults: p.defaults, country: { "US" }, pickDelay: .zero) { p.radio }
+        let mesh = MeshtasticModel(defaults: p.defaults, pickDelay: .zero) { p.radio }
         mesh.setOn(true)
         for _ in 0..<50 where mesh.status != .ready { try await Task.sleep(for: .milliseconds(20)) }
         XCTAssertEqual(mesh.status, .ready)

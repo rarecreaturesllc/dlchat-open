@@ -157,7 +157,7 @@ struct MeshMapView: View {
                 location
                 if mode == 0 { mapView } else { list }
                 worldwideControls
-                Text("Your own radio's location sharing is off, so it is not on anyone's map. Your location stays on this phone.")
+                Text("DLChat does not change your radio's location sharing. If your radio shares its position, it can show on other people's maps: check it in the Meshtastic app. This phone's own location stays on this phone.")
                     .font(.dl(.footnote)).foregroundStyle(Color.dlSoft)
             }
             .padding(DLSpace.md)

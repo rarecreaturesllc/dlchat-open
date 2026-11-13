@@ -159,6 +159,8 @@ final class ChatDrawerUITests: XCTestCase {
         let settings = app.descendants(matching: .any)["mesh-settings"]
         XCTAssertTrue(settings.exists, "the row is always listed, so it can be found")
         XCTAssertFalse(settings.isEnabled, "but only usable with a connected, confirmed radio")
+        // It is the first thing on the screen, above the radio status, channels and radios.
+        XCTAssertLessThan(settings.frame.minY, app.staticTexts["mesh-manage-status"].frame.minY)
     }
 
     /// A swipe right from the left edge of an open chat goes back to the Chats list; the same swipe from

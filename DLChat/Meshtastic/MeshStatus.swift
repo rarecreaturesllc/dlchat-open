@@ -5,7 +5,7 @@ enum MeshStatus {
         let name = mesh.radioName ?? "the radio"
         if mesh.licensed { return "\(name) is in licensed mode. DLChat will not send through it." }
         if mesh.applying { return "Updating \(name)'s settings. It may restart." }
-        if mesh.regionUnset, mesh.status == .ready { return "\(name) has no region yet, so it cannot send. Set it in Settings." }
+        if mesh.regionUnset, mesh.status == .ready { return "\(name) has no region yet, so it cannot send. Set it in the Meshtastic app." }
         switch mesh.status {
         case .off: return "Radio off"
         case .bluetoothOff: return "Turn on Bluetooth to use the radio."
@@ -18,7 +18,7 @@ enum MeshStatus {
         case .ready:
             _ = mesh.mineVersion
             return mesh.isMine ? "Sending and receiving by radio through \(name)"
-                               : "Connected to \(name). If it's yours, confirm it in Settings so DLChat can turn off its location sharing."
+                               : "Connected to \(name). If it's yours, confirm it in Settings to unlock its Radio settings."
         }
     }
 }

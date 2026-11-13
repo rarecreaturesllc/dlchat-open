@@ -30,7 +30,7 @@ final class MeshArchiveTests: XCTestCase {
         let fake = FakeRadio(node: node)
         let d = UserDefaults(suiteName: suite)!
         d.set(true, forKey: MeshtasticModel.lawAcceptedKey)
-        let mesh = MeshtasticModel(defaults: d, country: { "US" }, saveDelay: .milliseconds(1)) { fake }
+        let mesh = MeshtasticModel(defaults: d, saveDelay: .milliseconds(1)) { fake }
         mesh.useArchive(store)
         return (mesh, fake)
     }
