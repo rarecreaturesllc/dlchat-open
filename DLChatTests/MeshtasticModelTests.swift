@@ -354,7 +354,7 @@ final class MeshtasticModelTests: XCTestCase {
         XCTAssertFalse(p.mesh.isReady)
         let before = p.radio.written.count
         XCTAssertFalse(p.mesh.send(try wire("hello", p)))
-        XCTAssertEqual(p.radio.written.count, before, "nothing written to a ham-mode radio")
+        XCTAssertEqual(p.radio.written.count, before, "nothing written to a licensed-mode radio")
         XCTAssertNotNil(p.mesh.problem)
     }
 
@@ -437,6 +437,7 @@ final class MeshtasticModelTests: XCTestCase {
         p.mesh.setOn(true); p.mesh.choose(p.mesh.radios[0])
         XCTAssertEqual(p.mesh.hopLimit, 3)
         XCTAssertTrue(p.mesh.canChangeSettings)
+        XCTAssertNil(p.mesh.settingsBlocker, "connected and mine: the Radio settings screen has nothing in its way")
         let before = p.radio.adminCount
         XCTAssertTrue(p.mesh.setHopLimit(5))
         XCTAssertEqual(p.radio.adminCount - before, 3, "one batch: begin, LoRa, commit")
@@ -456,6 +457,7 @@ final class MeshtasticModelTests: XCTestCase {
         for _ in 0..<50 where mesh.status != .ready { try await Task.sleep(for: .milliseconds(20)) }
         XCTAssertEqual(mesh.status, .ready)
         XCTAssertFalse(mesh.isMine)
+        XCTAssertTrue(mesh.settingsBlocker?.contains("This is my radio") == true, "the screen says what to do first")
         XCTAssertFalse(mesh.setTxPower(20))
         XCTAssertEqual(p.radio.adminCount, 0)
         mesh.confirmMine()

@@ -16,8 +16,8 @@ struct MeshRadioSettingsView: View {
 
     var body: some View {
         List {
-            if locked {
-                note("These need the radio connected and confirmed as yours.")
+            if let why = mesh.settingsBlocker {
+                note(why).accessibilityIdentifier("mesh-settings-blocker")
             }
             if failed {
                 Label("The radio did not take that change. Nothing was changed.", systemImage: "exclamationmark.triangle.fill")

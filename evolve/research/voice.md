@@ -95,7 +95,7 @@ Format: [tag] "quote" | app | source | date. App Store links: Signal https://app
 
 ## Gaps and notes
 
-- No usable quotes found for: message drafts lost, safety-number confusion (only tangential HN debate), battery drain for Session, goTenna, or ham/prepper radio users (r/preppers, r/amateurradio are Reddit-only and were blocked).
+- No usable quotes found for: message drafts lost, safety-number confusion (only tangential HN debate), battery drain for Session, goTenna, or amateur and prepper radio users (r/preppers, r/amateurradio are Reddit-only and were blocked).
 - App Store reviews are linked at the app reviews page, not a per-review permalink; match by title and date.
 - Quotes were taken from the sources as returned; HN comment text had HTML stripped.
 - Injection check: no page or issue text contained instructions aimed at the agent. Nothing to report.

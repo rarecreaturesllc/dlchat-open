@@ -16,7 +16,7 @@ struct MeshNodeListView: View {
     var body: some View {
         List {
             if mesh.licensed {
-                Label("Your radio is in licensed (ham) mode, which does not allow private messages.", systemImage: "exclamationmark.triangle.fill")
+                Label("Your radio is in licensed mode, which does not allow private messages.", systemImage: "exclamationmark.triangle.fill")
                     .font(.dl(.subheadline)).foregroundStyle(Color.dlWarn).listRowBackground(Color.dlNight)
             }
             Section {

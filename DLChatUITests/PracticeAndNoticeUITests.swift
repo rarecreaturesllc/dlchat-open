@@ -1,7 +1,7 @@
 import XCTest
 
 /// The practice drill from the Safety sheet, and the Meshtastic radio rules notice that must be
-/// accepted before the radio can be turned on. Sound has no notice: DLChat is not for walkie-talkies.
+/// accepted before the radio can be turned on. Sound has no notice: DLChat is not for voice radios.
 /// Uses the throwaway `-seed-demo` vault; `-reset-demo` also clears the notice flag.
 final class PracticeAndNoticeUITests: XCTestCase {
     override func setUp() {

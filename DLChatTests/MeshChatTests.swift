@@ -160,7 +160,7 @@ final class MeshChatTests: XCTestCase {
         mesh.setOn(true); mesh.choose(mesh.radios[0])
         let before = fake.written.count
         XCTAssertNotNil(mesh.sendText("private", in: .direct(0xB2)))
-        XCTAssertEqual(fake.written.count, before, "nothing written: ham mode forbids encryption")
+        XCTAssertEqual(fake.written.count, before, "nothing written: licensed mode forbids encryption")
         XCTAssertNil(mesh.sendText("public hello", in: .channel(0)), "plain channel text is allowed in licensed mode")
     }
 

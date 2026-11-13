@@ -13,6 +13,7 @@ struct SettingsView: View {
     let wipe: () -> Bool
     let done: () -> Void
     @State private var notifyOn = Notifier.isOn()
+    @State private var showingRadioSettings = false
     @State private var notifyDenied = false
     @State private var practicing = Launch().screen == .practice
     @State private var showingRules = Launch().screen == .radio || Launch().screen == .notice
@@ -78,6 +79,13 @@ struct SettingsView: View {
         }
         .sheet(item: $document) { DocumentView(document: $0) { document = nil } }
         .sheet(isPresented: $experimenting) { ExperimentsView { experimenting = false } }
+        .sheet(isPresented: $showingRadioSettings) {
+            NavigationStack {
+                MeshRadioSettingsView(mesh: mesh)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showingRadioSettings = false } } }
+            }
+            .preferredColorScheme(.dark)
+        }
         .sheet(isPresented: $showingInternet) { InternetMessagingSettingsView(direct: direct) { showingInternet = false } }
     }
 
@@ -243,6 +251,11 @@ struct SettingsView: View {
                         .foregroundStyle(location.contains("could not") ? Color.dlWarn : Color.dlSoft)
                         .accessibilityIdentifier("settings-radio-location")
                 }
+                // Transmit power, hops, name and the rest: also reached from Chat > Manage Meshtastic.
+                if mesh.isMine, mesh.status == .ready {
+                    Button("Radio settings") { showingRadioSettings = true }.buttonStyle(.dlSecondary)
+                        .accessibilityIdentifier("settings-radio-settings")
+                }
                 Button("Forget this radio") { mesh.forget() }.buttonStyle(.dlSecondary)
                     .accessibilityIdentifier("settings-radio-forget")
             }
@@ -255,7 +268,7 @@ struct SettingsView: View {
             note(mesh.letsGoInBackground
                  ? "A radio talks to one app at a time. DLChat lets go when you switch away, so the Meshtastic app can use it, and takes it back when you return. Radio messages cannot notify you while DLChat is closed."
                  : "DLChat stays connected while in the background, so radio messages can notify you while the phone is locked. Tap Let go of radio before using the Meshtastic app.")
-            note("Once a radio is yours (chosen by hand, or confirmed), DLChat turns off its GPS and location sharing, and asks before setting a region. DLChat never sends through a radio in licensed (ham) mode, where encryption is not allowed.")
+            note("Once a radio is yours (chosen by hand, or confirmed), DLChat turns off its GPS and location sharing, and asks before setting a region. DLChat never sends through a radio in licensed mode, where encryption is not allowed.")
         }
     }
 

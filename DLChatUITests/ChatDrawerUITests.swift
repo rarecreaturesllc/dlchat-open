@@ -156,7 +156,9 @@ final class ChatDrawerUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["mesh-manage-status"].waitForExistence(timeout: 10))
         XCTAssertEqual(app.staticTexts["mesh-manage-status"].label, "Radio off", "managing never turns the radio on")
         XCTAssertTrue(app.descendants(matching: .any)["mesh-history"].exists)
-        XCTAssertFalse(app.descendants(matching: .any)["mesh-settings"].exists, "radio settings need a connected, confirmed radio")
+        let settings = app.descendants(matching: .any)["mesh-settings"]
+        XCTAssertTrue(settings.exists, "the row is always listed, so it can be found")
+        XCTAssertFalse(settings.isEnabled, "but only usable with a connected, confirmed radio")
     }
 
     /// A swipe right from the left edge of an open chat goes back to the Chats list; the same swipe from

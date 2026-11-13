@@ -63,7 +63,7 @@ struct MeshChatView: View {
             return ("exclamationmark.triangle.fill", .dlWarn, text)
         case .direct(let num):
             if mesh.licensed {
-                return ("exclamationmark.triangle.fill", .dlWarn, "Your radio is in licensed (ham) mode, which does not allow private messages. Nothing can be sent here.")
+                return ("exclamationmark.triangle.fill", .dlWarn, "Your radio is in licensed mode, which does not allow private messages. Nothing can be sent here.")
             }
             var text = "Encrypted by Meshtastic's own keys between the two radios, not by your DLChat phrase. Other radios can still see that your radio messaged this one, and when."
             if mesh.nodes[num]?.publicKey == nil { text += " This radio's key has not arrived yet, so a message may not go until it announces itself." }

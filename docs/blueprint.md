@@ -305,7 +305,7 @@ transmits: sound, a QR on screen, or a Nearby frame. See `data-inventory.md`.
 
 ## 13. Radio rules (not legal advice; needs review)
 
-> **Superseded 2026-11-12 (owner decision):** DLChat is no longer meant for walkie-talkies or other
+> **Superseded 2026-11-12 (owner decision):** DLChat is no longer meant for voice radios or other
 > voice radios. Words and sound are for in person and chats; the only radio is Meshtastic on
 > unlicensed bands, off until the user accepts its notice. The analysis below is kept as history.
 
@@ -313,14 +313,14 @@ This affects the product premise, so it is stated plainly. US rules read 2026-11
 
 | Service | What the text says |
 | --- | --- |
-| GMRS | Prohibits "Coded messages or messages with hidden meanings" (47 CFR 95.1733(a)(3)). FCC staff have treated voice scrambling as coded messaging |
-| Amateur (ham) | Prohibits messages "encoded for the purpose of obscuring their meaning" (97.113(a)(4)), but 97.403 allows "any means of radiocommunication" for immediate safety of life and property when normal systems are unavailable |
-| FRS | No explicit code ban found in 95.333 or 95.533. Digital data rules (95.531, 95.587) cover built-in unit features limited to 1 second per 30 seconds. Whether acoustically played tones count is unclear |
+| personal radio service | Prohibits "Coded messages or messages with hidden meanings" (47 CFR 95.1733(a)(3)). FCC staff have treated voice scrambling as coded messaging |
+| Amateur radio | Prohibits messages "encoded for the purpose of obscuring their meaning" (97.113(a)(4)), but 97.403 allows "any means of radiocommunication" for immediate safety of life and property when normal systems are unavailable |
+| family radio service rules | No explicit code ban found in 95.333 or 95.533. Digital data rules (95.531, 95.587) cover built-in unit features limited to 1 second per 30 seconds. Whether acoustically played tones count is unclear |
 | All voice shared channels | 95.381 blocks certifying radios with voice obscuring; it addresses radio hardware, not an app beside a radio |
 
-I did not find a Part 95 emergency exception for coded GMRS traffic, and did not establish
-the position for non-US users. **Most likely reading: using this on GMRS or ham in ordinary
-times breaks FCC rules, even though the same act in a true emergency has at least a ham
+I did not find a Part 95 emergency exception for coded personal radio service traffic, and did not establish
+the position for non-US users. **Most likely reading: using this on personal radio service or amateur radio in ordinary
+times breaks FCC rules, even though the same act in a true emergency has at least an amateur radio
 exception.** The app itself transmits nothing on its own; the user holds the radio.
 
 Product consequences:

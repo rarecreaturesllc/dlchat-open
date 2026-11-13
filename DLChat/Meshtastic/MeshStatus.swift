@@ -3,7 +3,7 @@ enum MeshStatus {
     @MainActor
     static func text(_ mesh: MeshtasticModel) -> String {
         let name = mesh.radioName ?? "the radio"
-        if mesh.licensed { return "\(name) is in licensed (ham) mode. DLChat will not send through it." }
+        if mesh.licensed { return "\(name) is in licensed mode. DLChat will not send through it." }
         if mesh.applying { return "Updating \(name)'s settings. It may restart." }
         if mesh.regionUnset, mesh.status == .ready { return "\(name) has no region yet, so it cannot send. Set it in Settings." }
         switch mesh.status {

@@ -16,7 +16,7 @@ Neighborhood groups, families and preparedness-minded households who want privat
 
 ## Product Purpose
 
-DLChat lets a group message privately in person, over the internet through Tor, or through their own Meshtastic radio. A group shares a generated secret phrase of 10, 15 or 20 words. The app derives a key from it, encrypts a message, and renders the result as gibberish words that can be read out, as a sound another phone can hear, as a QR code, or as a sealed packet for relays or the radio. Only phrase holders can decrypt. (Updated 2026-11-12: DLChat is no longer pitched for walkie-talkies.)
+DLChat lets a group message privately in person, over the internet through Tor, or through their own Meshtastic radio. A group shares a generated secret phrase of 10, 15 or 20 words. The app derives a key from it, encrypts a message, and renders the result as gibberish words that can be read out, as a sound another phone can hear, as a QR code, or as a sealed packet for relays or the radio. Only phrase holders can decrypt. (Updated 2026-11-12: DLChat is no longer pitched for voice radios.)
 
 ## Positioning
 

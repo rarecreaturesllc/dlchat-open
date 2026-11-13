@@ -5,7 +5,7 @@ import Observation
 /// A Meshtastic LoRa radio as one more way to carry DLChat's sealed messages, off by default. When
 /// on and paired, Chat sends each message to the radio as a private-app broadcast on its primary
 /// channel, and anything the radio hears that opens with one of this phone's groups is stored like
-/// any other message. Never sends while the radio is in licensed (ham) mode, where encryption is not allowed.
+/// any other message. Never sends while the radio is in licensed mode, where encryption is not allowed.
 ///
 /// Setup on pairing, so the Meshtastic app is not needed: a radio with no region gets one from the phone's
 /// country, after the person confirms (a wrong region is illegal to transmit on); location sharing is turned
@@ -31,7 +31,7 @@ final class MeshtasticModel {
     private(set) var radios: [RadioLinkRadio] = []
     /// The paired radio's name, once it has said it.
     private(set) var radioName: String?
-    /// The radio is set to licensed (ham) mode: DLChat will not send through it.
+    /// The radio is set to licensed mode: DLChat will not send through it.
     private(set) var licensed = false
     private(set) var problem: String?
     /// The radio said it has no LoRa region, so it cannot transmit yet. False until its settings arrive.
@@ -72,7 +72,7 @@ final class MeshtasticModel {
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let makeLink: () -> RadioLink
     @ObservationIgnored private var link: RadioLink?
-    @ObservationIgnored private var myNode: UInt32?
+    private var myNode: UInt32?
     @ObservationIgnored private var configID: UInt32 = 0
     @ObservationIgnored private var seen: Set<Data> = []
     /// (from, packet id) of text messages already shown: the mesh repeats packets.
@@ -324,7 +324,7 @@ final class MeshtasticModel {
     @discardableResult
     func send(_ wire: Data) -> Bool {
         guard isOn, status == .ready else { return false }
-        guard !licensed else { problem = "The radio is in licensed (ham) mode, where encrypted messages are not allowed. Nothing was sent by radio."; return false }
+        guard !licensed else { problem = "The radio is in licensed mode, where encrypted messages are not allowed. Nothing was sent by radio."; return false }
         guard !regionUnset else { problem = "Set the radio's region in Settings first. Nothing was sent by radio."; return false }
         guard wire.count <= Meshtastic.maxPayload else { problem = "Too long for the radio. Shorten the message to send it by radio."; return false }
         guard let packet = try? Meshtastic.broadcastPacket(payload: wire, id: Self.packetID(),
@@ -548,7 +548,19 @@ final class MeshtasticModel {
 /// region (except `setSuggestedRegion`), frequency, duty cycle or any channel key.
 extension MeshtasticModel {
     /// Not while a change is going out: a second write would be built from the old settings and undo the first.
-    var canChangeSettings: Bool { isMine && status == .ready && myNode != nil && !applying }
+    var canChangeSettings: Bool { settingsBlocker == nil }
+
+    /// Why the radio settings cannot be changed right now, in words for the screen; nil when they can.
+    var settingsBlocker: String? {
+        _ = mineVersion  // isMine lives in UserDefaults; this redraws when it changes
+        if savedRadio == nil || !isActive { return "Turn on the radio and connect it first (Settings > Meshtastic radio)." }
+        if !isMine { return "Confirm the radio is yours first (Settings > Meshtastic radio > This is my radio)." }
+        if status != .ready { return "The radio is not connected yet. Connecting\u{2026}" }
+        if applying { return "The radio is applying a change. This takes a few seconds." }
+        if myNode == nil { return "The radio has not introduced itself yet. Reopen this screen in a moment." }
+        if loraRaw == nil { return "The radio has not sent its settings yet. Reopen this screen in a moment." }
+        return nil
+    }
 
     // What the radio is set to now, for the settings screen. nil until the radio has sent that section.
     var txPower: Int? { loraRaw.map { Meshtastic.txPower(currentLoRa: $0) } }
@@ -648,9 +660,9 @@ extension MeshtasticModel {
     /// The radios this phone can direct-message: heard by its own radio, ones with a conversation first, then most recently heard.
     var directNodes: [MeshNode] {
         nodes.values.filter { $0.source == .radio && !MeshPrefs.shared.ignoredNodes.contains($0.num) }.sorted { a, b in
-            let ca = texts[.direct(a.num)]?.last?.at, cb = texts[.direct(b.num)]?.last?.at
-            if (ca != nil) != (cb != nil) { return ca != nil }
-            if let ca, let cb, ca != cb { return ca > cb }
+            let lastA = texts[.direct(a.num)]?.last?.at, lastB = texts[.direct(b.num)]?.last?.at
+            if (lastA != nil) != (lastB != nil) { return lastA != nil }
+            if let lastA, let lastB, lastA != lastB { return lastA > lastB }
             return (a.lastHeard ?? .distantPast) > (b.lastHeard ?? .distantPast)
         }
     }
@@ -703,7 +715,7 @@ extension MeshtasticModel {
             guard channel(index) != nil else { return "The radio no longer has this channel." }
             packet = try? Meshtastic.textPacket(body, to: Meshtastic.broadcast, channel: index, id: id, hops: Meshtastic.hopLimit(currentLoRa: loraRaw))
         case .direct(let num):
-            guard !licensed else { return "The radio is in licensed (ham) mode, where private messages are not allowed. Nothing was sent." }
+            guard !licensed else { return "The radio is in licensed mode, where private messages are not allowed. Nothing was sent." }
             guard num != me else { return "That is your own radio." }
             packet = try? Meshtastic.textPacket(body, to: num, id: id, hops: Meshtastic.hopLimit(currentLoRa: loraRaw),
                                                 publicKey: nodes[num]?.publicKey)

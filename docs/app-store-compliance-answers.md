@@ -17,7 +17,7 @@ What we can say truthfully to App Review (this text is also in
 - DLChat does not transmit on any radio band by itself.
 - Meshtastic radios use license-free ISM bands (in the US, 902 to 928 MHz under FCC Part 15),
   where encrypted data is allowed. Meshtastic already encrypts its own channels.
-- DLChat is not meant for walkie-talkies or other voice radios (owner decision 2026-11-12). Words and
+- DLChat is not meant for voice radios (owner decision 2026-11-12). Words and
   sound are for in person and chats, and the app and listing never suggest using them over a radio.
 - The Meshtastic radio is off by default. Turning it on needs the user to accept a notice: the
   radio uses unlicensed bands, follow your country's rules, you are responsible for what you send.

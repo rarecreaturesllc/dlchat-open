@@ -43,20 +43,23 @@ struct MeshManageView: View {
                     footer("Mute stops badges. Ignore hides a radio and drops its messages. Forget clears it and its chat from this phone; it comes back when your radio next announces it. The radio's own node list is not changed.")
                 }
 
-                if mesh.canChangeSettings {
-                    Section {
-                        NavigationLink { MeshRadioSettingsView(mesh: mesh) } label: {
-                            HStack(spacing: DLSpace.sm) {
-                                Image(systemName: "slider.horizontal.3").font(.dl(.title3)).foregroundStyle(Color.dlSoft).frame(width: 28)
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Radio settings").font(.dl(.headline)).foregroundStyle(Color.dlText)
-                                    Text("Power, hops, name, role, location and more").font(.dl(.footnote)).foregroundStyle(Color.dlSoft)
-                                }
+                Section {
+                    NavigationLink { MeshRadioSettingsView(mesh: mesh) } label: {
+                        HStack(spacing: DLSpace.sm) {
+                            Image(systemName: "slider.horizontal.3").font(.dl(.title3)).foregroundStyle(Color.dlSoft).frame(width: 28)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Radio settings").font(.dl(.headline)).foregroundStyle(Color.dlText)
+                                Text("Power, hops, name, role, location and more").font(.dl(.footnote)).foregroundStyle(Color.dlSoft)
                             }
-                            .frame(minHeight: DLSize.control)
                         }
-                        .listRowBackground(Color.dlNight).accessibilityIdentifier("mesh-settings")
-                    } footer: { footer("Written to your radio, which restarts for a moment. Shown only for a radio you confirmed is yours.") }
+                        .frame(minHeight: DLSize.control)
+                    }
+                    .disabled(!mesh.canChangeSettings)
+                    .listRowBackground(Color.dlNight).accessibilityIdentifier("mesh-settings")
+                } footer: {
+                    footer(mesh.canChangeSettings
+                           ? "Written to your radio, which restarts for a moment. Shown as usable only for a radio you confirmed is yours."
+                           : mesh.settingsBlocker ?? "")
                 }
 
                 Section {
